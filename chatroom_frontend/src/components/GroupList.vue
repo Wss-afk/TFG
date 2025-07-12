@@ -1,6 +1,5 @@
 <template>
   <div class="group-list">
-    <h4>群组列表</h4>
     <ul>
       <li v-for="group in groups" :key="group.id" @click="$emit('select', group)">
         {{ group.name }}

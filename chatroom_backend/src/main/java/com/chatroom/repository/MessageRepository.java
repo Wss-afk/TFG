@@ -10,7 +10,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByReceiver(User receiver);
+
     List<Message> findByGroup(Group group);
+
     @Query("SELECT m FROM Message m WHERE (m.group.id = :groupId OR m.receiver.id = :receiverId)")
     List<Message> findByGroupIdOrReceiverId(@Param("groupId") Long groupId, @Param("receiverId") Long receiverId);
+
+    @Query("SELECT m FROM Message m WHERE (m.sender.id = :userId AND m.receiver.id = :receiverId) OR (m.sender.id = :receiverId AND m.receiver.id = :userId)")
+    List<Message> findChatHistory(@Param("userId") Long userId, @Param("receiverId") Long receiverId);
 }

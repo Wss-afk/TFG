@@ -4,7 +4,7 @@
       当前与 <b>{{ chatUser.username }}</b> 的对话
     </div>
     <div class="messages">
-      <MessageItem v-for="(msg, idx) in messages" :key="idx" :message="msg" />
+      <MessageItem v-for="(msg, idx) in messages" :key="idx" :message="msg" :currentUserId="currentUserId" />
     </div>
     <slot></slot>
   </div>
@@ -23,6 +23,10 @@ export default {
     chatUser: {
       type: Object,
       default: null
+    },
+    currentUserId: {
+      type: [String, Number],
+      required: true
     }
   }
 }
