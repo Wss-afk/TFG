@@ -17,3 +17,15 @@ export function sendMessage({ groupId = null, receiverId = null, content, sender
     }
   )
 }
+
+export function markMessagesAsRead(userId, senderId) {
+  return axios.post(API_URL + 'mark-read', null, {
+    params: { userId, senderId }
+  })
+}
+
+export function getUnreadCount(userId, senderId) {
+  return axios.get(API_URL + 'unread-count', {
+    params: { userId, senderId }
+  })
+}

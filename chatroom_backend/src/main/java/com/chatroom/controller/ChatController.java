@@ -10,6 +10,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -100,6 +101,40 @@ public class ChatController {
             message.setGroup(groupRepository.findById(message.getGroup().getId()).orElse(null));
         }
         message.setTimestamp(LocalDateTime.now());
-        return messageRepository.save(message);
+        Message savedMessage = messageRepository.save(message);
+        
+        // 通过WebSocket推送消息给接收者
+        if (savedMessage.getReceiver() != null) {
+            messagingTemplate.convertAndSendToUser(
+                    savedMessage.getReceiver().getUsername(),
+                    "/queue/messages",
+                    savedMessage);
+        }
+        
+        return savedMessage;
+    }
+
+    @PostMapping("/mark-read")
+    public ResponseEntity<String> markMessagesAsRead(@RequestParam Long userId, @RequestParam Long senderId) {
+        try {
+            List<Message> unreadMessages = messageRepository.findUnreadMessages(userId, senderId);
+            for (Message message : unreadMessages) {
+                message.setIsRead(true);
+                messageRepository.save(message);
+            }
+            return ResponseEntity.ok("Messages marked as read");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error marking messages as read");
+        }
+    }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<Integer> getUnreadCount(@RequestParam Long userId, @RequestParam Long senderId) {
+        try {
+            int count = messageRepository.countUnreadMessages(userId, senderId);
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(-1);
+        }
     }
 }

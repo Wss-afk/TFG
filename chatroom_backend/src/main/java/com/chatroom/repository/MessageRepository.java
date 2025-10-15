@@ -18,4 +18,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT m FROM Message m WHERE (m.sender.id = :userId AND m.receiver.id = :receiverId) OR (m.sender.id = :receiverId AND m.receiver.id = :userId)")
     List<Message> findChatHistory(@Param("userId") Long userId, @Param("receiverId") Long receiverId);
+
+    @Query("SELECT m FROM Message m WHERE m.receiver.id = :userId AND m.sender.id = :senderId AND m.isRead = false")
+    List<Message> findUnreadMessages(@Param("userId") Long userId, @Param("senderId") Long senderId);
+
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.receiver.id = :userId AND m.sender.id = :senderId AND m.isRead = false")
+    int countUnreadMessages(@Param("userId") Long userId, @Param("senderId") Long senderId);
 }

@@ -2,6 +2,7 @@ package com.chatroom.controller;
 
 import com.chatroom.entity.User;
 import com.chatroom.service.UserService;
+import com.chatroom.service.OnlineUserService;
 import com.chatroom.repository.GroupRepository;
 import com.chatroom.entity.Group;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,12 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
     @Autowired
     private UserService userService;
+    @Autowired
+    private OnlineUserService onlineUserService;
     @Autowired
     private GroupRepository groupRepository;
 
@@ -48,5 +52,22 @@ public class UserController {
             // Return empty list instead of throwing exception
             return new ArrayList<>();
         }
+    }
+
+    @GetMapping("/online")
+    public Set<User> getOnlineUsers() {
+        return onlineUserService.getOnlineUsers();
+    }
+
+    @GetMapping("/online/{userId}")
+    public ResponseEntity<Boolean> isUserOnline(@PathVariable Long userId) {
+        boolean isOnline = onlineUserService.isUserOnline(userId);
+        return ResponseEntity.ok(isOnline);
+    }
+
+    @GetMapping("/online/count")
+    public ResponseEntity<Integer> getOnlineUserCount() {
+        int count = onlineUserService.getOnlineUserCount();
+        return ResponseEntity.ok(count);
     }
 }
