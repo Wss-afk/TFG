@@ -1,7 +1,10 @@
 <template>
   <div class="chat-window">
-    <div class="chat-header" v-if="chatUser">
+    <div class="chat-header" v-if="chatUser && chatType === 'user'">
       当前与 <b>{{ chatUser.username }}</b> 的对话
+    </div>
+    <div class="chat-header" v-else-if="chatGroup && chatType === 'group'">
+      群组聊天: <b>{{ chatGroup.name }}</b>
     </div>
     <div class="messages">
       <MessageItem v-for="(msg, idx) in messages" :key="idx" :message="msg" :currentUserId="currentUserId" />
@@ -23,6 +26,14 @@ export default {
     chatUser: {
       type: Object,
       default: null
+    },
+    chatGroup: {
+      type: Object,
+      default: null
+    },
+    chatType: {
+      type: String,
+      default: 'user'
     },
     currentUserId: {
       type: [String, Number],

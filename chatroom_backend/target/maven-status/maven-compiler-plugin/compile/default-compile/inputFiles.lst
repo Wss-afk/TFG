@@ -1,7 +1,6 @@
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\config\CorsConfig.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\config\StompPrincipal.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\entity\User.java
-C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\config\WebMvcConfig.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\entity\Message.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\controller\UserController.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\websocket\WebSocketEventListener.java

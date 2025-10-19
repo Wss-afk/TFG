@@ -15,7 +15,12 @@
       </div>
     </div>
     <div class="main-chat">
-      <ChatWindow :messages="messages" :chatUser="selectedUser" :currentUserId="currentUser && currentUser.id">
+      <ChatWindow 
+        :messages="messages" 
+        :chatUser="selectedUser" 
+        :chatGroup="selectedGroup"
+        :chatType="chatType"
+        :currentUserId="currentUser && currentUser.id">
         <div class="chat-input-area">
           <input v-model="inputMsg" @keyup.enter="send" placeholder="输入消息..." />
           <button @click="send">发送</button>
@@ -50,7 +55,10 @@ export default {
       messages: [],
       inputMsg: '',
       selectedUser: null,
+      selectedGroup: null, // Grupo seleccionado
+      chatType: 'user', // 'user' o 'group'
       globalSubscription: null,
+      groupSubscriptions: {}, // Suscripciones a grupos
       wsConnected: false,
       unreadCounts: {}, // 存储每个用户的未读消息数量
       onlineUsers: [] // 存储在线用户列表
@@ -143,37 +151,88 @@ export default {
       oscillator.start(audioContext.currentTime)
       oscillator.stop(audioContext.currentTime + 0.2)
     },
-    selectGroup() {
-      // 切换到群聊逻辑
+    async selectGroup(group) {
+      try {
+        this.selectedGroup = group
+        this.selectedUser = null // Limpiar selección de usuario
+        this.chatType = 'group'
+        
+        const { fetchMessages } = await import('../services/chat.service.js')
+        const res = await fetchMessages({ groupId: group.id })
+        this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        
+        // Suscribirse a mensajes del grupo
+        this.subscribeToGroupChannel(group.id)
+      } catch (e) {
+        console.error('Error en selectGroup:', e)
+      }
     },
     async send() {
-      if (this.inputMsg.trim() && this.selectedUser) {
+      if (this.inputMsg.trim()) {
         const content = this.inputMsg
         
-        // 通过WebSocket发送消息
-        const { sendMessage } = require('../services/websocket.js')
-        const message = {
-          sender: { id: this.currentUser.id, username: this.currentUser.username },
-          receiver: { id: this.selectedUser.id, username: this.selectedUser.username },
-          content,
-          type: 'text',
-          timestamp: new Date().toISOString()
+        if (this.chatType === 'user' && this.selectedUser) {
+          // Envío de mensaje a usuario individual
+          const { sendMessage } = require('../services/websocket.js')
+          const message = {
+            sender: { id: this.currentUser.id, username: this.currentUser.username },
+            receiver: { id: this.selectedUser.id, username: this.selectedUser.username },
+            content,
+            type: 'text',
+            timestamp: new Date().toISOString()
+          }
+          
+          // Enviar a WebSocket
+          sendMessage('/app/chat/single', message)
+          
+          // Agregar mensaje localmente
+          this.messages.push(message)
+        } else if (this.chatType === 'group' && this.selectedGroup) {
+          // Envío de mensaje a grupo
+          const { sendMessage } = require('../services/websocket.js')
+          const message = {
+            sender: { id: this.currentUser.id, username: this.currentUser.username },
+            group: { id: this.selectedGroup.id, name: this.selectedGroup.name },
+            content,
+            type: 'text',
+            timestamp: new Date().toISOString()
+          }
+          
+          // Enviar a WebSocket
+          sendMessage('/app/chat/group', message)
+          
+          // Agregar mensaje localmente
+          this.messages.push(message)
         }
         
-        // 发送到WebSocket
-        sendMessage('/app/chat/single', message)
-        
-        // 本地添加消息（发送者看到）
-        this.messages.push(message)
         this.inputMsg = ''
       }
     },
-    
-    initWebSocketConnection() {
-      if (!this.currentUser) {
-        console.error('当前用户信息不存在，无法建立WebSocket连接')
-        return
+    subscribeToGroupChannel(groupId) {
+      const { subscribe } = require('../services/websocket.js')
+      const topic = `/topic/group/${groupId}`
+      console.log('Suscribiendo a canal de grupo:', topic)
+      
+      // Desuscribirse del canal anterior si existe
+      if (this.groupSubscriptions[groupId]) {
+        this.groupSubscriptions[groupId].unsubscribe()
       }
+      
+      this.groupSubscriptions[groupId] = subscribe(topic, (msg) => {
+        console.log('Mensaje de grupo recibido:', msg)
+        
+        // Agregar mensaje si es del grupo actual
+        if (this.selectedGroup && msg.group && msg.group.id === this.selectedGroup.id) {
+          this.messages.push(msg)
+        }
+      })
+    },
+     
+    initWebSocketConnection() {
+       if (!this.currentUser) {
+         console.error('当前用户信息不存在，无法建立WebSocket连接')
+         return
+       }
       
       const { connectWebSocket } = require('../services/websocket.js')
       connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
@@ -284,6 +343,14 @@ export default {
     if (this.globalSubscription) {
       this.globalSubscription.unsubscribe()
     }
+    
+    // Desuscribirse de todos los canales de grupo
+    Object.values(this.groupSubscriptions).forEach(subscription => {
+      if (subscription) {
+        subscription.unsubscribe()
+      }
+    })
+    
     disconnectWebSocket()
   }
 }

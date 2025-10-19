@@ -63,33 +63,35 @@ public class ChatController {
     }
 
     @GetMapping("/messages")
-    public List<Message> getMessages(@RequestParam(required = false) Long groupId,
+    public ResponseEntity<List<Message>> getMessages(@RequestParam(required = false) Long groupId,
             @RequestParam(required = false) Long receiverId, @RequestParam(required = false) Long userId) {
         try {
             if (groupId != null) {
-                Group group = groupRepository.findById(groupId).orElse(null);
-                if (group != null) {
-                    return messageRepository.findByGroup(group);
+                Optional<Group> groupOpt = groupRepository.findById(groupId);
+                if (groupOpt.isPresent()) {
+                    List<Message> messages = messageRepository.findByGroup(groupOpt.get());
+                    return ResponseEntity.ok(messages);
                 } else {
-                    return List.of();
+                    return ResponseEntity.ok(List.of());
                 }
             } else if (receiverId != null && userId != null) {
                 if (userRepository.findById(userId).isEmpty() || userRepository.findById(receiverId).isEmpty()) {
-                    return List.of();
+                    return ResponseEntity.ok(List.of());
                 }
-                return messageRepository.findChatHistory(userId, receiverId);
+                List<Message> messages = messageRepository.findChatHistory(userId, receiverId);
+                return ResponseEntity.ok(messages);
             } else {
-                return List.of();
+                return ResponseEntity.ok(List.of());
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return List.of();
+            return ResponseEntity.status(500).body(List.of());
         }
     }
 
     @PostMapping("/send")
     public Message sendMessage(@RequestBody Message message, @RequestParam(required = false) Long senderId,
-            @RequestParam(required = false) Long receiverId) {
+            @RequestParam(required = false) Long receiverId, @RequestParam(required = false) Long groupId) {
         // Asignar sender y receiver correctamente usando los IDs si están presentes
         if (message.getSender() == null && senderId != null) {
             message.setSender(userRepository.findById(senderId).orElse(null));
@@ -97,14 +99,33 @@ public class ChatController {
         if (message.getReceiver() == null && receiverId != null) {
             message.setReceiver(userRepository.findById(receiverId).orElse(null));
         }
-        if (message.getGroup() != null && message.getGroup().getId() != null) {
+        
+        // Manejar mensajes de grupo
+        if (groupId != null) {
+            Optional<Group> groupOpt = groupRepository.findById(groupId);
+            if (groupOpt.isPresent()) {
+                message.setGroup(groupOpt.get());
+            }
+        } else if (message.getGroup() != null && message.getGroup().getId() != null) {
             message.setGroup(groupRepository.findById(message.getGroup().getId()).orElse(null));
         }
+        
         message.setTimestamp(LocalDateTime.now());
         Message savedMessage = messageRepository.save(message);
         
-        // 通过WebSocket推送消息给接收者
-        if (savedMessage.getReceiver() != null) {
+        // Enviar mensaje a través de WebSocket
+        if (savedMessage.getGroup() != null) {
+            // Mensaje de grupo - enviar a todos los miembros del grupo
+            savedMessage.getGroup().getUsers().forEach(user -> {
+                messagingTemplate.convertAndSendToUser(
+                        user.getUsername(),
+                        "/queue/messages",
+                        savedMessage);
+            });
+            // También enviar al canal del grupo
+            messagingTemplate.convertAndSend("/topic/group/" + savedMessage.getGroup().getId(), savedMessage);
+        } else if (savedMessage.getReceiver() != null) {
+            // Mensaje individual
             messagingTemplate.convertAndSendToUser(
                     savedMessage.getReceiver().getUsername(),
                     "/queue/messages",

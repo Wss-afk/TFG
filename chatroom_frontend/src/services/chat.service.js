@@ -7,15 +7,27 @@ export function fetchMessages({ groupId = null, receiverId = null, userId = null
 }
 
 export function sendMessage({ groupId = null, receiverId = null, content, senderId = null }) {
-  return axios.post(
-    API_URL + 'send?senderId=' + senderId + '&receiverId=' + receiverId,
-    {
-      groupId,
-      content,
-      type: 'text',
-      timestamp: new Date().toISOString()
-    }
-  )
+  if (groupId) {
+    // Envío de mensaje a grupo
+    return axios.post(
+      API_URL + 'send?senderId=' + senderId + '&groupId=' + groupId,
+      {
+        content,
+        type: 'text',
+        timestamp: new Date().toISOString()
+      }
+    )
+  } else {
+    // Envío de mensaje individual
+    return axios.post(
+      API_URL + 'send?senderId=' + senderId + '&receiverId=' + receiverId,
+      {
+        content,
+        type: 'text',
+        timestamp: new Date().toISOString()
+      }
+    )
+  }
 }
 
 export function markMessagesAsRead(userId, senderId) {
