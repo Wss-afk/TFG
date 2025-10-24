@@ -50,15 +50,8 @@ public class ChatController {
         message.setTimestamp(LocalDateTime.now());
         messageRepository.save(message);
         if (message.getGroup() != null) {
-            Optional<Group> groupOpt = groupRepository.findById(message.getGroup().getId());
-            groupOpt.ifPresent(group -> {
-                group.getUsers().forEach(user -> {
-                    messagingTemplate.convertAndSendToUser(
-                            user.getUsername(),
-                            "/queue/messages",
-                            message);
-                });
-            });
+            // Solo enviar al canal del grupo, no a usuarios individuales
+            messagingTemplate.convertAndSend("/topic/group/" + message.getGroup().getId(), message);
         }
     }
 
@@ -115,21 +108,21 @@ public class ChatController {
         
         // Enviar mensaje a través de WebSocket
         if (savedMessage.getGroup() != null) {
-            // Mensaje de grupo - enviar a todos los miembros del grupo
-            savedMessage.getGroup().getUsers().forEach(user -> {
-                messagingTemplate.convertAndSendToUser(
-                        user.getUsername(),
-                        "/queue/messages",
-                        savedMessage);
-            });
-            // También enviar al canal del grupo
+            // Mensaje de grupo - solo enviar al canal del grupo
             messagingTemplate.convertAndSend("/topic/group/" + savedMessage.getGroup().getId(), savedMessage);
         } else if (savedMessage.getReceiver() != null) {
-            // Mensaje individual
+            // Mensaje individual - enviar a ambos usuarios
             messagingTemplate.convertAndSendToUser(
                     savedMessage.getReceiver().getUsername(),
                     "/queue/messages",
                     savedMessage);
+            // También enviar al remitente para sincronización
+            if (savedMessage.getSender() != null) {
+                messagingTemplate.convertAndSendToUser(
+                        savedMessage.getSender().getUsername(),
+                        "/queue/messages",
+                        savedMessage);
+            }
         }
         
         return savedMessage;

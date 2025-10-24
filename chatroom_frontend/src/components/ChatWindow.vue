@@ -6,7 +6,7 @@
     <div class="chat-header" v-else-if="chatGroup && chatType === 'group'">
       群组聊天: <b>{{ chatGroup.name }}</b>
     </div>
-    <div class="messages">
+    <div class="messages" ref="messagesContainer">
       <MessageItem v-for="(msg, idx) in messages" :key="idx" :message="msg" :currentUserId="currentUserId" />
     </div>
     <slot></slot>

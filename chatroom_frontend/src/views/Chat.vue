@@ -11,11 +11,12 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-title">群组列表</div>
-        <GroupList :groups="groups" @select="selectGroup" />
+        <GroupList :groups="groups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" />
       </div>
     </div>
     <div class="main-chat">
       <ChatWindow 
+        ref="chatWindow"
         :messages="messages" 
         :chatUser="selectedUser" 
         :chatGroup="selectedGroup"
@@ -35,7 +36,13 @@ import UserList from '../components/UserList.vue'
 import GroupList from '../components/GroupList.vue'
 import ChatWindow from '../components/ChatWindow.vue'
 import { mapGetters } from 'vuex'
-import { disconnectWebSocket, setOnlineUsersCallback } from '../services/websocket.js'
+import { 
+  disconnectWebSocket, 
+  setOnlineUsersCallback, 
+  sendMessage, 
+  subscribe, 
+  connectWebSocket 
+} from '../services/websocket.js'
 
 export default {
   name: 'ChatPage',
@@ -61,7 +68,10 @@ export default {
       groupSubscriptions: {}, // Suscripciones a grupos
       wsConnected: false,
       unreadCounts: {}, // 存储每个用户的未读消息数量
-      onlineUsers: [] // 存储在线用户列表
+      groupUnreadCounts: {}, // 存储每个群组的未读消息数量
+      onlineUsers: [], // 存储在线用户列表
+      audioContext: null, // AudioContext para sonidos de notificación
+      userHasInteracted: false // Flag para saber si el usuario ha interactuado
     }
   },
   methods: {
@@ -85,7 +95,7 @@ export default {
           if (this.currentUser) {
             await markMessagesAsRead(this.currentUser.id, user.id)
             // 清除该用户的未读消息计数
-            this.unreadCounts = { ...this.unreadCounts, [user.id]: 0 }
+            this.unreadCounts[user.id] = 0
             console.log(`清除用户${user.id}的未读消息计数`)
           }
       } catch (e) {
@@ -98,23 +108,41 @@ export default {
       this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     },
     handleNewMessage(message) {
-      // 解析 senderId，兼容不同结构
+      // Resolver senderId, compatible con diferentes estructuras
       const senderId = (message && message.sender && (message.sender.id ?? message.sender.userId)) || message.senderId
       const isFromSelf = senderId && this.currentUser && senderId === this.currentUser.id
-      // 如果消息不是当前用户发送的，且不是当前对话窗口
+      
+      console.log('Procesando mensaje nuevo:', {
+        senderId,
+        isFromSelf,
+        isGroup: !!message.group,
+        selectedUserId: this.selectedUser?.id,
+        chatType: this.chatType
+      })
+      
+      // Si el mensaje no es del usuario actual
       if (!isFromSelf) {
         
-        // 如果不是当前选中的用户发送的消息，增加未读计数
-        if (senderId && (!this.selectedUser || senderId !== this.selectedUser.id)) {
-          const newCount = (this.unreadCounts[senderId] || 0) + 1
-          this.unreadCounts = { ...this.unreadCounts, [senderId]: newCount }
-          console.log(`用户${senderId}未读消息数量更新为:`, newCount)
+        // Solo procesar mensajes individuales para conteo de no leídos
+        // Los mensajes de grupo no deben aparecer como no leídos en usuarios individuales
+        if (!message.group && senderId) {
+          // Incrementar contador solo si no es el chat actualmente seleccionado
+          const isCurrentChat = this.chatType === 'user' && this.selectedUser && senderId === this.selectedUser.id
+          
+          if (!isCurrentChat) {
+             const newCount = (this.unreadCounts[senderId] || 0) + 1
+             // En Vue 3, usar asignación directa para reactividad
+             this.unreadCounts[senderId] = newCount
+             console.log(`Usuario ${senderId} mensajes no leídos actualizados a:`, newCount)
+           }
         }
         
-        // 显示桌面通知
-        this.showNotification(message)
+        // Mostrar notificación de escritorio solo para mensajes individuales
+        if (!message.group) {
+          this.showNotification(message)
+        }
         
-        // 播放提示音
+        // Reproducir sonido de notificación
         this.playNotificationSound()
       }
     },
@@ -134,22 +162,54 @@ export default {
       }
     },
     playNotificationSound() {
-      // 创建简单的提示音
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
-      
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContext.destination)
-      
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
-      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1)
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
-      
-      oscillator.start(audioContext.currentTime)
-      oscillator.stop(audioContext.currentTime + 0.2)
+      // Solo reproducir sonido si el usuario ha interactuado con la página
+      if (!this.userHasInteracted) {
+        console.log('No se puede reproducir sonido: el usuario no ha interactuado con la página')
+        return
+      }
+
+      try {
+        // Crear o reutilizar AudioContext
+        if (!this.audioContext) {
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        }
+
+        // Reanudar AudioContext si está suspendido
+        if (this.audioContext.state === 'suspended') {
+          this.audioContext.resume().then(() => {
+            this.createNotificationSound()
+          }).catch(error => {
+            console.error('Error al reanudar AudioContext:', error)
+          })
+        } else {
+          this.createNotificationSound()
+        }
+      } catch (error) {
+        console.error('Error al crear AudioContext:', error)
+      }
+    },
+    
+    createNotificationSound() {
+      if (!this.audioContext) return
+
+      try {
+        const oscillator = this.audioContext.createOscillator()
+        const gainNode = this.audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(this.audioContext.destination)
+        
+        oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime)
+        oscillator.frequency.setValueAtTime(600, this.audioContext.currentTime + 0.1)
+        
+        gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2)
+        
+        oscillator.start(this.audioContext.currentTime)
+        oscillator.stop(this.audioContext.currentTime + 0.2)
+      } catch (error) {
+        console.error('Error al crear sonido de notificación:', error)
+      }
     },
     async selectGroup(group) {
       try {
@@ -163,6 +223,11 @@ export default {
         
         // Suscribirse a mensajes del grupo
         this.subscribeToGroupChannel(group.id)
+        
+        // 清除该群组的未读消息计数
+        if (group && group.id) {
+          this.groupUnreadCounts[group.id] = 0
+        }
       } catch (e) {
         console.error('Error en selectGroup:', e)
       }
@@ -173,7 +238,6 @@ export default {
         
         if (this.chatType === 'user' && this.selectedUser) {
           // Envío de mensaje a usuario individual
-          const { sendMessage } = require('../services/websocket.js')
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username },
             receiver: { id: this.selectedUser.id, username: this.selectedUser.username },
@@ -185,11 +249,10 @@ export default {
           // Enviar a WebSocket
           sendMessage('/app/chat/single', message)
           
-          // Agregar mensaje localmente
-          this.messages.push(message)
+          // NO añadir mensaje localmente - llegará por WebSocket
+          // this.messages.push(message)
         } else if (this.chatType === 'group' && this.selectedGroup) {
           // Envío de mensaje a grupo
-          const { sendMessage } = require('../services/websocket.js')
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username },
             group: { id: this.selectedGroup.id, name: this.selectedGroup.name },
@@ -201,15 +264,14 @@ export default {
           // Enviar a WebSocket
           sendMessage('/app/chat/group', message)
           
-          // Agregar mensaje localmente
-          this.messages.push(message)
+          // NO añadir mensaje localmente - llegará por WebSocket
+          // this.messages.push(message)
         }
         
         this.inputMsg = ''
       }
     },
     subscribeToGroupChannel(groupId) {
-      const { subscribe } = require('../services/websocket.js')
       const topic = `/topic/group/${groupId}`
       console.log('Suscribiendo a canal de grupo:', topic)
       
@@ -220,35 +282,58 @@ export default {
       
       this.groupSubscriptions[groupId] = subscribe(topic, (msg) => {
         console.log('Mensaje de grupo recibido:', msg)
+        const msgGroupId = (msg && msg.group && msg.group.id) || groupId
+        const isCurrentGroup = this.chatType === 'group' && this.selectedGroup && msg.group && msg.group.id === this.selectedGroup.id
         
-        // Agregar mensaje si es del grupo actual
-        if (this.selectedGroup && msg.group && msg.group.id === this.selectedGroup.id) {
+        if (isCurrentGroup) {
           this.messages.push(msg)
+          // Scroll to bottom after adding message
+          this.$nextTick(() => {
+            this.scrollToBottom()
+          })
+        } else {
+          // Incrementar contador de no leídos para el grupo
+          const newCount = (this.groupUnreadCounts[msgGroupId] || 0) + 1
+          this.groupUnreadCounts[msgGroupId] = newCount
+          console.log(`Grupo ${msgGroupId} mensajes no leídos:`, newCount)
+          
+          // Reproducir sonido de notificación para mensajes de grupo no visibles
+          this.playNotificationSound()
         }
       })
     },
-     
+    
+    subscribeToAllGroupChannels() {
+      if (!Array.isArray(this.groups)) return
+      for (const g of this.groups) {
+        if (g && g.id) {
+          this.subscribeToGroupChannel(g.id)
+        }
+      }
+    },
+    
     initWebSocketConnection() {
-       if (!this.currentUser) {
-         console.error('当前用户信息不存在，无法建立WebSocket连接')
-         return
-       }
-      
-      const { connectWebSocket } = require('../services/websocket.js')
+      if (!this.currentUser) {
+        console.error('当前用户信息不存在，无法建立WebSocket连接')
+        return
+      }
+     
       connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
         console.log('WebSocket连接成功')
         this.wsConnected = true
         
         // 设置在线用户列表更新回调
-      setOnlineUsersCallback((onlineUsers) => {
-        const normalized = this.normalizeOnlineUsers(onlineUsers)
-        this.onlineUsers = normalized
-        console.log('在线用户列表已更新(规范化):', normalized)
-      })
+        setOnlineUsersCallback((onlineUsers) => {
+          const normalized = this.normalizeOnlineUsers(onlineUsers)
+          this.onlineUsers = normalized
+          console.log('在线用户列表已更新(规范化):', normalized)
+        })
         
         // WebSocket连接成功后，订阅当前用户的消息频道
         setTimeout(() => {
           this.subscribeToGlobalUserChannel()
+          // 订阅所有群组频道以统计未读
+          this.subscribeToAllGroupChannels()
         }, 100) // 稍微延迟确保连接完全建立
       }, (error) => {
         console.error('WebSocket连接失败:', error)
@@ -258,7 +343,6 @@ export default {
     
     subscribeToGlobalUserChannel() {
       if (this.currentUser) {
-        const { subscribe } = require('../services/websocket.js')
         const topic = `/user/queue/messages`
         console.log('订阅消息频道:', topic)
         this.globalSubscription = subscribe(topic, (msg) => {
@@ -268,8 +352,12 @@ export default {
           
           // 当当前选中用户就是消息发送者，直接追加到当前消息列表，避免延迟
           const senderId = (msg && msg.sender && (msg.sender.id ?? msg.sender.userId)) || msg.senderId
-          if (this.selectedUser && senderId === this.selectedUser.id) {
+          if (this.chatType === 'user' && this.selectedUser && senderId === this.selectedUser.id) {
             this.messages.push(msg)
+            // Scroll to bottom after adding message
+            this.$nextTick(() => {
+              this.scrollToBottom()
+            })
           }
         })
         
@@ -321,6 +409,33 @@ export default {
       } catch (error) {
         console.error('获取未读消息数量失败:', error)
       }
+    },
+    
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const chatWindow = this.$refs.chatWindow
+        if (chatWindow && chatWindow.$refs.messagesContainer) {
+          const messagesContainer = chatWindow.$refs.messagesContainer
+          messagesContainer.scrollTop = messagesContainer.scrollHeight
+        }
+      })
+    },
+    
+    setupUserInteractionDetection() {
+      // Detectar cualquier interacción del usuario (click, keydown, touchstart)
+      const enableAudio = () => {
+        this.userHasInteracted = true
+        console.log('Usuario ha interactuado - AudioContext habilitado')
+        
+        // Remover los event listeners una vez que se detecta la interacción
+        document.removeEventListener('click', enableAudio)
+        document.removeEventListener('keydown', enableAudio)
+        document.removeEventListener('touchstart', enableAudio)
+      }
+      
+      document.addEventListener('click', enableAudio)
+      document.addEventListener('keydown', enableAudio)
+      document.addEventListener('touchstart', enableAudio)
     }
   },
   async mounted() {
@@ -338,6 +453,9 @@ export default {
     
     // 初始化WebSocket连接
     this.initWebSocketConnection()
+    
+    // Detectar interacción del usuario para habilitar AudioContext
+    this.setupUserInteractionDetection()
   },
   beforeUnmount() {
     if (this.globalSubscription) {
