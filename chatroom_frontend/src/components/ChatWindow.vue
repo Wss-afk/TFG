@@ -6,6 +6,13 @@
     <div class="chat-header" v-else-if="chatGroup && chatType === 'group'">
       群组聊天: <b>{{ chatGroup.name }}</b>
     </div>
+    <div v-if="chatGroup && chatType === 'group'" class="group-members-bar">
+      <span class="members-title">Miembros:</span>
+      <div class="members-list">
+        <span v-for="u in (chatGroup.users || [])" :key="u.id" class="member-chip">{{ u.username }}</span>
+        <span v-if="!chatGroup.users || chatGroup.users.length === 0" class="member-chip empty">Sin miembros</span>
+      </div>
+    </div>
     <div class="messages" ref="messagesContainer">
       <MessageItem v-for="(msg, idx) in messages" :key="idx" :message="msg" :currentUserId="currentUserId" />
     </div>
@@ -103,5 +110,40 @@ export default {
 
 .messages::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+.group-members-bar {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.members-title {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.member-chip {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.member-chip.empty {
+  background: #e2e8f0;
+  color: #334155;
 }
 </style>

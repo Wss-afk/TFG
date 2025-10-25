@@ -86,6 +86,8 @@ export default {
     async selectUser(user) {
       try {
         this.selectedUser = user
+        this.selectedGroup = null
+        this.chatType = 'user'
         
         const { fetchMessages, markMessagesAsRead } = await import('../services/chat.service.js')
         const res = await fetchMessages({ receiverId: user.id, userId: this.currentUser && this.currentUser.id })
