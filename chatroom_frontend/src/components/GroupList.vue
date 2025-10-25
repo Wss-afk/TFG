@@ -6,7 +6,7 @@
           <span class="group-name">{{ group.name }}</span>
           <span v-if="groupUnreadCounts[group.id] > 0" class="unread-badge">{{ groupUnreadCounts[group.id] }}</span>
         </div>
-        <span class="group-members">{{ group.users ? group.users.length : 0 }} 成员</span>
+        <span class="group-members">{{ group.users ? group.users.length : 0 }} miembros</span>
       </li>
     </ul>
   </div>

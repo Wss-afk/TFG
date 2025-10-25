@@ -1,16 +1,24 @@
 <template>
   <div class="chat-page">
     <div class="sidebar">
+      <div class="sidebar-brand">
+        <img class="brand-logo" src="@/assets/chatroom-logo.svg" alt="Chatroom" />
+        <div class="brand-text">
+          <span class="brand-name">Chatroom</span>
+          <span class="brand-sub">mensajería</span>
+        </div>
+      </div>
       <div class="sidebar-user">
+        <img v-if="currentUser && currentUser.avatarUrl" :src="currentUser.avatarUrl" class="sidebar-avatar" />
         <span class="sidebar-username">{{ currentUser && currentUser.username }}</span>
-        <span class="sidebar-self">(自己)</span>
+        <span class="self-badge" title="Este eres tú">Tú</span>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-title">用户列表</div>
+        <div class="sidebar-title">Usuarios</div>
         <UserList :users="sortedUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" @select="selectUser" />
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-title">群组列表</div>
+        <div class="sidebar-title">Grupos</div>
         <GroupList :groups="groups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" />
       </div>
     </div>
@@ -23,8 +31,12 @@
         :chatType="chatType"
         :currentUserId="currentUser && currentUser.id">
         <div class="chat-input-area">
-          <input v-model="inputMsg" @keyup.enter="send" placeholder="输入消息..." />
-          <button @click="send">发送</button>
+          <div class="chat-input-actions">
+            <button class="icon-btn" type="button" title="Emoji">😊</button>
+            <button class="icon-btn" type="button" title="Adjuntar">📎</button>
+          </div>
+          <input v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
+          <button @click="send">Enviar</button>
         </div>
       </ChatWindow>
     </div>
@@ -521,39 +533,73 @@ body {
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
 }
 
-.sidebar-user {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 24px 0 20px 0;
-  text-align: center;
-  color: white;
-  font-size: 1.2em;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  position: relative;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-.sidebar-user::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 20%;
-  right: 20%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+.brand-logo {
+  width: 28px;
+  height: 28px;
 }
+
+.brand-text { display: flex; flex-direction: column; line-height: 1; }
+.brand-name { font-weight: 700; color: #334155; font-size: 16px; }
+.brand-sub { color: #94a3b8; font-size: 12px; }
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: none;
+}
+
+.sidebar-user::after { content: none; }
+
+.sidebar-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #c7d2fe;
+  border: 2px solid #eef2ff;
+}
+
+.sidebar-username { color: #334155; font-weight: 600; text-shadow: none; }
+.sidebar-self { color: #64748b; font-size: 12px; margin-left: 4px; font-weight: 500; }
 
 .sidebar-username {
-  color: #ffffff;
+  color: #334155;
   font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  text-shadow: none;
 }
 
 .sidebar-self {
-  color: rgba(255,255,255,0.8);
-  font-size: 0.9em;
+  color: #64748b;
+  font-size: 12px;
   margin-left: 4px;
-  font-weight: 400;
+  font-weight: 500;
+}
+
+.self-badge {
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  color: #ffffff;
+  border-radius: 9999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: auto;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
 }
 
 .sidebar-section {
@@ -691,6 +737,27 @@ body {
     0 2px 8px rgba(102, 126, 234, 0.3),
     0 1px 2px rgba(0,0,0,0.1);
 }
+
+.chat-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #eef2f7;
+  color: #334155;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover { background: #e2e8f0; transform: translateY(-1px); }
+.icon-btn:active { transform: translateY(0); }
 
 /* 响应式设计 - 平板设备 */
 @media (max-width: 1024px) {

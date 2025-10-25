@@ -1,10 +1,10 @@
 <template>
   <div class="chat-window">
     <div class="chat-header" v-if="chatUser && chatType === 'user'">
-      当前与 <b>{{ chatUser.username }}</b> 的对话
+      Conversación con <b>{{ chatUser.username }}</b>
     </div>
     <div class="chat-header" v-else-if="chatGroup && chatType === 'group'">
-      群组聊天: <b>{{ chatGroup.name }}</b>
+      Grupo: <b>{{ chatGroup.name }}</b>
     </div>
     <div v-if="chatGroup && chatType === 'group'" class="group-members-bar">
       <span class="members-title">Miembros:</span>
