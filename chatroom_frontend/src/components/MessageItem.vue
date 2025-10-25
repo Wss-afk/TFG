@@ -1,7 +1,22 @@
 <template>
   <div :class="['message-item', isMine ? 'mine' : '']">
     <span class="sender">{{ typeof message.sender === 'object' && message.sender ? message.sender.username : message.sender }}:</span>
-    <span class="content">{{ message.content }}</span>
+    <div class="content">
+      <template v-if="message.type === 'image' && message.fileUrl">
+        <a :href="message.fileUrl" target="_blank" rel="noopener noreferrer">
+          <img :src="message.fileUrl" alt="imagen adjunta" class="attachment-image" />
+        </a>
+        <div v-if="message.content" class="caption">{{ message.content }}</div>
+      </template>
+      <template v-else-if="message.type === 'file' && message.fileUrl">
+        <a :href="message.fileUrl" target="_blank" rel="noopener noreferrer" class="attachment-file">
+          📎 {{ message.content || 'Archivo' }}
+        </a>
+      </template>
+      <template v-else>
+        {{ message.content }}
+      </template>
+    </div>
     <span class="timestamp">{{ formattedTime }}</span>
   </div>
 </template>
@@ -133,13 +148,24 @@ export default {
   margin: 4px 0;
 }
 
-.timestamp {
-  position: absolute;
-  right: 12px;
-  bottom: 4px;
-  font-size: 0.7em;
-  opacity: 0.7;
-  font-weight: 500;
+.attachment-image {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 12px;
+  display: block;
+}
+
+.attachment-file {
+  color: #2b6cb0;
+  text-decoration: none;
+  font-weight: 600;
+}
+.attachment-file:hover { text-decoration: underline; }
+
+.caption {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.85;
 }
 
 .message-item.mine .timestamp {
@@ -148,6 +174,18 @@ export default {
 
 .message-item:not(.mine) .timestamp {
   color: #718096;
+}
+
+.message-item.mine .attachment-file { color: #fff; }
+.message-item.mine .caption { color: rgba(255,255,255,0.9); }
+
+.timestamp {
+  position: absolute;
+  right: 12px;
+  bottom: 4px;
+  font-size: 0.7em;
+  opacity: 0.7;
+  font-weight: 500;
 }
 
 /* 响应式设计 */

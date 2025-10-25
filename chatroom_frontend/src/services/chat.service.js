@@ -41,3 +41,31 @@ export function getUnreadCount(userId, senderId) {
     params: { userId, senderId }
   })
 }
+
+export function uploadAttachment(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return axios.post(API_URL + 'upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export function sendAttachmentMessage({ groupId = null, receiverId = null, senderId = null, fileUrl, fileType, content = '' }) {
+  const payload = {
+    content: content || (fileType === 'image' ? 'Imagen' : 'Archivo'),
+    type: fileType,
+    fileUrl,
+    timestamp: new Date().toISOString()
+  }
+  if (groupId) {
+    return axios.post(
+      API_URL + 'send?senderId=' + senderId + '&groupId=' + groupId,
+      payload
+    )
+  } else {
+    return axios.post(
+      API_URL + 'send?senderId=' + senderId + '&receiverId=' + receiverId,
+      payload
+    )
+  }
+}

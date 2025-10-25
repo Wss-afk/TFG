@@ -32,11 +32,15 @@
         :currentUserId="currentUser && currentUser.id">
         <div class="chat-input-area">
           <div class="chat-input-actions">
-            <button class="icon-btn" type="button" title="Emoji">😊</button>
-            <button class="icon-btn" type="button" title="Adjuntar">📎</button>
+            <button class="icon-btn" type="button" title="Emoji" @click="toggleEmojiPicker">😊</button>
+            <button class="icon-btn" type="button" title="Adjuntar" @click="triggerAttach">📎</button>
+            <input ref="fileInput" type="file" style="display:none" @change="handleFileSelected" />
           </div>
           <input v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
           <button @click="send">Enviar</button>
+        </div>
+        <div v-if="showEmojiPicker" class="emoji-picker">
+          <button v-for="e in emojis" :key="e" class="emoji-btn" @click="insertEmoji(e)" type="button">{{ e }}</button>
         </div>
       </ChatWindow>
     </div>
@@ -83,7 +87,9 @@ export default {
       groupUnreadCounts: {}, // 存储每个群组的未读消息数量
       onlineUsers: [], // 存储在线用户列表
       audioContext: null, // AudioContext para sonidos de notificación
-      userHasInteracted: false // Flag para saber si el usuario ha interactuado
+      userHasInteracted: false, // Flag para saber si el usuario ha interactuado
+      showEmojiPicker: false,
+      emojis: ['😀','😁','😂','😊','😍','😎','😘','😅','😉','🤩','🥳','😇','🙌','👍','👏','🔥','✨','❤️','💯','🎉']
     }
   },
   methods: {
@@ -251,7 +257,6 @@ export default {
         const content = this.inputMsg
         
         if (this.chatType === 'user' && this.selectedUser) {
-          // Envío de mensaje a usuario individual
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username },
             receiver: { id: this.selectedUser.id, username: this.selectedUser.username },
@@ -259,14 +264,12 @@ export default {
             type: 'text',
             timestamp: new Date().toISOString()
           }
-          
-          // Enviar a WebSocket
           sendMessage('/app/chat/single', message)
-          
-          // NO añadir mensaje localmente - llegará por WebSocket
-          // this.messages.push(message)
+          this.messages.push(message)
+          this.$nextTick(() => {
+            this.scrollToBottom()
+          })
         } else if (this.chatType === 'group' && this.selectedGroup) {
-          // Envío de mensaje a grupo
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username },
             group: { id: this.selectedGroup.id, name: this.selectedGroup.name },
@@ -274,15 +277,50 @@ export default {
             type: 'text',
             timestamp: new Date().toISOString()
           }
-          
-          // Enviar a WebSocket
           sendMessage('/app/chat/group', message)
-          
-          // NO añadir mensaje localmente - llegará por WebSocket
-          // this.messages.push(message)
         }
-        
         this.inputMsg = ''
+      }
+    },
+    toggleEmojiPicker() {
+      this.showEmojiPicker = !this.showEmojiPicker
+    },
+    insertEmoji(e) {
+      this.inputMsg = (this.inputMsg || '') + e
+    },
+    triggerAttach() {
+      const el = this.$refs.fileInput
+      if (el) el.click()
+    },
+    async handleFileSelected(evt) {
+      try {
+        const file = evt.target.files && evt.target.files[0]
+        if (!file) return
+        const { uploadAttachment } = await import('../services/chat.service.js')
+        const res = await uploadAttachment(file)
+        const { url, type } = res.data || {}
+        if (!url || !type) return
+        const baseMessage = {
+          sender: { id: this.currentUser.id, username: this.currentUser.username },
+          content: file.name,
+          type,
+          fileUrl: url,
+          timestamp: new Date().toISOString()
+        }
+        if (this.chatType === 'user' && this.selectedUser) {
+          const message = { ...baseMessage, receiver: { id: this.selectedUser.id, username: this.selectedUser.username } }
+          sendMessage('/app/chat/single', message)
+          // Añadir optimista para el emisor
+          this.messages.push(message)
+          this.$nextTick(() => this.scrollToBottom())
+        } else if (this.chatType === 'group' && this.selectedGroup) {
+          const message = { ...baseMessage, group: { id: this.selectedGroup.id, name: this.selectedGroup.name } }
+          sendMessage('/app/chat/group', message)
+        }
+        // limpiar input de archivo
+        evt.target.value = ''
+      } catch (err) {
+        console.error('Error al enviar adjunto:', err)
       }
     },
     subscribeToGroupChannel(groupId) {
@@ -865,4 +903,24 @@ body {
     min-height: calc(100vh - 5px);
   }
 }
+
+.emoji-picker {
+  margin-top: 8px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid rgba(226,232,240,0.6);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.emoji-btn {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+.emoji-btn:hover { background: #e2e8f0; }
 </style>
