@@ -8,20 +8,20 @@ export function connectWebSocket(url, username, onMessage, onConnect, onError) {
   const socket = new SockJS(url)
   stompClient = Stomp.over(socket)
   
-  // 添加用户身份信息到连接头部
+  // Añadir identidad de usuario a la cabecera de conexión
   const headers = {
     username: username
   }
   
   stompClient.connect(headers, frame => {
-    console.log('WebSocket连接成功:', frame)
+    console.log('WebSocket conectado:', frame)
     
-    // 订阅在线用户列表更新
+    // Suscribirse a actualizaciones de usuarios en línea
     subscribeToOnlineUsers()
     
     if (onConnect) onConnect(frame)
   }, error => {
-    console.error('WebSocket连接失败:', error)
+    console.error('Error de conexión WebSocket:', error)
     if (onError) onError(error)
   })
 }
@@ -42,18 +42,25 @@ export function sendMessage(destination, body) {
 
 export function disconnectWebSocket() {
   if (stompClient) {
-    stompClient.disconnect()
+    try {
+      // Solicitar desconexión STOMP y esperar ACK
+      stompClient.disconnect(() => {
+        console.log('WebSocket desconectado (ACK recibido)')
+      })
+    } catch (e) {
+      console.error('Error al desconectar STOMP:', e)
+    }
     stompClient = null
     onlineUsersCallback = null
   }
 }
 
-// 订阅在线用户列表更新
+// Suscribirse a actualizaciones de usuarios en línea
 function subscribeToOnlineUsers() {
   if (stompClient && stompClient.connected) {
     stompClient.subscribe('/topic/online-users', message => {
       const onlineUsers = JSON.parse(message.body)
-      console.log('收到在线用户列表更新:', onlineUsers)
+      console.log('Lista de usuarios en línea actualizada:', onlineUsers)
       if (onlineUsersCallback) {
         onlineUsersCallback(onlineUsers)
       }
@@ -61,12 +68,12 @@ function subscribeToOnlineUsers() {
   }
 }
 
-// 设置在线用户列表更新回调
+// Configurar callback de actualización de usuarios en línea
 export function setOnlineUsersCallback(callback) {
   onlineUsersCallback = callback
 }
 
-// 获取当前连接状态
+// Obtener estado de conexión actual
 export function isConnected() {
   return stompClient && stompClient.connected
 }

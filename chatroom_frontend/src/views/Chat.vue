@@ -114,9 +114,9 @@ export default {
         // 标记消息为已读
           if (this.currentUser) {
             await markMessagesAsRead(this.currentUser.id, user.id)
-            // 清除该用户的未读消息计数
+            // Limpiar contador de mensajes no leídos de este usuario
             this.unreadCounts[user.id] = 0
-            console.log(`清除用户${user.id}的未读消息计数`)
+            console.log(`Limpiar contador de no leídos del usuario ${user.id}`)
           }
       } catch (e) {
         console.error('Error en selectUser:', e)
@@ -168,7 +168,7 @@ export default {
     },
     showNotification(message) {
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`来自 ${message.sender.username} 的新消息`, {
+        new Notification(`Nuevo mensaje de ${message.sender.username}`, {
           body: message.content,
           icon: '/favicon.ico',
           tag: 'chat-message'
@@ -264,11 +264,8 @@ export default {
             type: 'text',
             timestamp: new Date().toISOString()
           }
+          // Enviar via STOMP; la UI se actualiza solo cuando el servidor hace eco
           sendMessage('/app/chat/single', message)
-          this.messages.push(message)
-          this.$nextTick(() => {
-            this.scrollToBottom()
-          })
         } else if (this.chatType === 'group' && this.selectedGroup) {
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username },
@@ -277,6 +274,7 @@ export default {
             type: 'text',
             timestamp: new Date().toISOString()
           }
+          // Enviar via STOMP; no hacer inserción optimista
           sendMessage('/app/chat/group', message)
         }
         this.inputMsg = ''
@@ -309,10 +307,8 @@ export default {
         }
         if (this.chatType === 'user' && this.selectedUser) {
           const message = { ...baseMessage, receiver: { id: this.selectedUser.id, username: this.selectedUser.username } }
+          // Enviar via STOMP; la UI se actualizará con el eco del servidor
           sendMessage('/app/chat/single', message)
-          // Añadir optimista para el emisor
-          this.messages.push(message)
-          this.$nextTick(() => this.scrollToBottom())
         } else if (this.chatType === 'group' && this.selectedGroup) {
           const message = { ...baseMessage, group: { id: this.selectedGroup.id, name: this.selectedGroup.name } }
           sendMessage('/app/chat/group', message)
@@ -366,29 +362,30 @@ export default {
     
     initWebSocketConnection() {
       if (!this.currentUser) {
-        console.error('当前用户信息不存在，无法建立WebSocket连接')
+        console.error('No hay información de usuario actual, no se puede establecer conexión WebSocket')
         return
       }
      
       connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
-        console.log('WebSocket连接成功')
+        console.log('WebSocket conectado')
         this.wsConnected = true
         
-        // 设置在线用户列表更新回调
+        // Configurar callback de usuarios en línea
         setOnlineUsersCallback((onlineUsers) => {
           const normalized = this.normalizeOnlineUsers(onlineUsers)
           this.onlineUsers = normalized
-          console.log('在线用户列表已更新(规范化):', normalized)
+          console.log('Lista de usuarios en línea actualizada (normalizada):', normalized)
         })
         
-        // WebSocket连接成功后，订阅当前用户的消息频道
+        // Tras conectar WebSocket, suscribirse al canal del usuario actual
         setTimeout(() => {
           this.subscribeToGlobalUserChannel()
-          // 订阅所有群组频道以统计未读
+          this.subscribeToControlChannel()
+          // Suscribirse a todos los canales de grupo para contar no leídos
           this.subscribeToAllGroupChannels()
-        }, 100) // 稍微延迟确保连接完全建立
+        }, 100) // Pequeño retraso para asegurar que la conexión esté lista
       }, (error) => {
-        console.error('WebSocket连接失败:', error)
+        console.error('Error de conexión WebSocket:', error)
         this.wsConnected = false
       })
     },
@@ -396,9 +393,9 @@ export default {
     subscribeToGlobalUserChannel() {
       if (this.currentUser) {
         const topic = `/user/queue/messages`
-        console.log('订阅消息频道:', topic)
+        console.log('Suscripción al canal de mensajes:', topic)
         this.globalSubscription = subscribe(topic, (msg) => {
-          console.log('收到新消息:', msg)
+          console.log('Nuevo mensaje recibido:', msg)
           // 处理接收到的消息
           this.handleNewMessage(msg)
           
@@ -414,12 +411,47 @@ export default {
         })
         
         if (this.globalSubscription) {
-          console.log('全局消息订阅成功')
+          console.log('Suscripción global exitosa')
         } else {
-          console.error('全局消息订阅失败')
+          console.error('Suscripción global fallida')
         }
       } else {
-        console.error('当前用户信息不存在，无法订阅消息')
+        console.error('No hay usuario actual, no se pueden suscribir mensajes')
+      }
+    },
+
+    // Suscribirse al canal de control para recibir eventos como force-logout
+    subscribeToControlChannel() {
+      if (this.currentUser) {
+        const topic = `/user/queue/control`
+        console.log('Suscripción al canal de control:', topic)
+        this.controlSubscription = subscribe(topic, (msg) => {
+          try {
+            if (msg && msg.action === 'force_logout') {
+              console.warn('Recibido force_logout; desconectando WebSocket')
+              // Desconectar socket y notificar al usuario
+              disconnectWebSocket()
+              this.wsConnected = false
+              const reason = msg && (msg.reason || msg.detail || msg.message)
+              let text = 'Has sido desconectado por el administrador.'
+              if (reason === 'password_changed') {
+                text = 'Tu contraseña ha sido actualizada por el administrador. Has sido desconectado. Inicia sesión de nuevo.'
+              } else if (reason === 'account_disabled') {
+                text = 'Tu cuenta ha sido deshabilitada por el administrador. La conexión se ha cerrado.'
+              }
+              alert(text)
+              // Cerrar sesión y redirigir al login
+              try {
+                this.$store.dispatch('auth/logout')
+              } catch (e) {
+                console.error('Error al ejecutar logout en store:', e)
+              }
+              this.$router.push('/login')
+            }
+          } catch (e) {
+            console.error('Error procesando control message:', e)
+          }
+        })
       }
     },
     
@@ -430,10 +462,10 @@ export default {
           const data = await response.json()
           const normalized = this.normalizeOnlineUsers(data)
           this.onlineUsers = normalized
-          console.log('获取在线用户列表(规范化):', normalized)
+          console.log('Lista de usuarios en línea (normalizada):', normalized)
         }
       } catch (error) {
-        console.error('获取在线用户列表失败:', error)
+        console.error('Error al obtener lista de usuarios en línea:', error)
       }
     },
     
@@ -450,16 +482,16 @@ export default {
               const response = await getUnreadCount(this.currentUser.id, user.id)
               unreadCounts[user.id] = response.data
             } catch (error) {
-              console.error(`获取用户${user.id}未读消息数量失败:`, error)
+              console.error(`Error al obtener no leídos del usuario ${user.id}:`, error)
               unreadCounts[user.id] = 0
             }
           }
         }
         
         this.unreadCounts = unreadCounts
-        console.log('未读消息数量:', this.unreadCounts)
+        console.log('Cantidad de mensajes no leídos:', this.unreadCounts)
       } catch (error) {
-        console.error('获取未读消息数量失败:', error)
+        console.error('Error al obtener cantidad de no leídos:', error)
       }
     },
     

@@ -16,7 +16,28 @@ const routes = [
     path: '/admin',
     name: 'Admin',
     component: () => import('../views/Admin.vue'),
-    meta: { requiresAuth: true, requiresSuperAdmin: true }
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    redirect: '/admin/users',
+    children: [
+      {
+        path: 'users',
+        name: 'AdminUsers',
+        component: () => import('../views/admin/AdminUsers.vue'),
+        meta: { requiresAuth: true, requiresSuperAdmin: true }
+      },
+      {
+        path: 'groups',
+        name: 'AdminGroups',
+        component: () => import('../views/admin/AdminGroups.vue'),
+        meta: { requiresAuth: true, requiresSuperAdmin: true }
+      },
+      {
+        path: 'audit',
+        name: 'AdminAudit',
+        component: () => import('../views/admin/AdminAudit.vue'),
+        meta: { requiresAuth: true, requiresSuperAdmin: true }
+      }
+    ]
   },
   {
     path: '/login',

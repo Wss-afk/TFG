@@ -6,6 +6,7 @@ import com.chatroom.service.OnlineUserService;
 import com.chatroom.repository.GroupRepository;
 import com.chatroom.entity.Group;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
@@ -29,13 +30,24 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestBody User user) {
-        Optional<User> userOpt = userService.login(user.getUsername(), user.getPassword());
-        if (userOpt.isPresent()) {
-            return ResponseEntity.ok(userOpt.get());
-        } else {
-            return ResponseEntity.status(401).build();
+    public ResponseEntity<?> login(@RequestBody User user) {
+        // Encontrar por username para distinguir entre contraseña incorrecta y usuario deshabilitado
+        Optional<User> foundOpt = userService.findByUsername(user.getUsername());
+        if (foundOpt.isPresent()) {
+            User found = foundOpt.get();
+            // Cuenta deshabilitada: 403 con mensaje claro
+            if (!Boolean.TRUE.equals(found.isEnabled())) {
+                return ResponseEntity.status(403).body(Map.of("message", "Cuenta deshabilitada por el administrador"));
+            }
+            // Contraseña correcta: OK
+            if (found.getPassword() != null && found.getPassword().equals(user.getPassword())) {
+                return ResponseEntity.ok(found);
+            }
+            // Contraseña incorrecta: 401 con mensaje
+            return ResponseEntity.status(401).body(Map.of("message", "Usuario o contraseña incorrectos"));
         }
+        // Usuario inexistente: 401 con mensaje genérico
+        return ResponseEntity.status(401).body(Map.of("message", "Usuario o contraseña incorrectos"));
     }
 
     @GetMapping("/list")

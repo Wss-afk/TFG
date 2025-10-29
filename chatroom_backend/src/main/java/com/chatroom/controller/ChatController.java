@@ -2,6 +2,7 @@ package com.chatroom.controller;
 
 import com.chatroom.entity.Message;
 import com.chatroom.entity.Group;
+import com.chatroom.entity.User;
 import com.chatroom.repository.MessageRepository;
 import com.chatroom.repository.UserRepository;
 import com.chatroom.repository.GroupRepository;
@@ -29,6 +30,10 @@ public class ChatController {
 
     @MessageMapping("/chat/single")
     public void sendSingleMessage(@Payload Message message) {
+        // Bloquear envío si el remitente está deshabilitado
+        if (isSenderDisabled(message)) {
+            return;
+        }
         message.setTimestamp(LocalDateTime.now());
         messageRepository.save(message);
         if (message.getReceiver() != null) {
@@ -47,6 +52,10 @@ public class ChatController {
 
     @MessageMapping("/chat/group")
     public void sendGroupMessage(@Payload Message message) {
+        // Bloquear envío si el remitente está deshabilitado
+        if (isSenderDisabled(message)) {
+            return;
+        }
         message.setTimestamp(LocalDateTime.now());
         messageRepository.save(message);
         if (message.getGroup() != null) {
@@ -103,6 +112,11 @@ public class ChatController {
             message.setGroup(groupRepository.findById(message.getGroup().getId()).orElse(null));
         }
         
+        // Si el remitente está deshabilitado, no persistir ni difundir
+        if (isSenderDisabled(message)) {
+            return message;
+        }
+
         message.setTimestamp(LocalDateTime.now());
         Message savedMessage = messageRepository.save(message);
         
@@ -126,6 +140,31 @@ public class ChatController {
         }
         
         return savedMessage;
+    }
+
+    // Helper para comprobar si el remitente está deshabilitado
+    private boolean isSenderDisabled(Message message) {
+        try {
+            User sender = message.getSender();
+            if (sender == null) return false;
+            // Prioridad por ID
+            if (sender.getId() != null) {
+                Optional<User> s = userRepository.findById(sender.getId());
+                if (s.isPresent()) {
+                    return !Boolean.TRUE.equals(s.get().isEnabled());
+                }
+            }
+            // Fallback por username
+            if (sender.getUsername() != null) {
+                Optional<User> s = userRepository.findByUsername(sender.getUsername());
+                if (s.isPresent()) {
+                    return !Boolean.TRUE.equals(s.get().isEnabled());
+                }
+            }
+        } catch (Exception e) {
+            // Si ocurre un error al validar, permitir (no bloquear) para evitar falsos negativos
+        }
+        return false;
     }
 
     @PostMapping("/mark-read")

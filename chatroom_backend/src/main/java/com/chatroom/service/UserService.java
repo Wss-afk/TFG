@@ -14,9 +14,9 @@ public class UserService {
     private UserRepository userRepository;
 
     public User register(User user) {
-        if (user.getRole() == null) {
-            user.setRole(Role.USER);
-        }
+        // Always enforce safe defaults on self-registration
+        user.setRole(Role.USER); // ignore any role provided by the client
+        user.setEnabled(true);   // ensure new accounts start enabled by default
         return userRepository.save(user);
     }
 

@@ -1,10 +1,10 @@
 <template>
   <div class="profile-container">
-    <h2>个人信息</h2>
+    <h2>Perfil</h2>
     <form @submit.prevent="save">
-      <input v-model="username" placeholder="用户名" />
-      <input v-model="email" placeholder="邮箱" />
-      <button type="submit">保存</button>
+      <input v-model="username" placeholder="Usuario" />
+      <input v-model="email" placeholder="Correo electrónico" />
+      <button type="submit">Guardar</button>
     </form>
   </div>
 </template>
@@ -20,8 +20,8 @@ export default {
   },
   methods: {
     save() {
-      // 保存逻辑待实现
-      this.$message.success('保存成功！')
+      // Lógica de guardado por implementar
+      this.$message && this.$message.success && this.$message.success('¡Guardado con éxito!')
     }
   }
 }
