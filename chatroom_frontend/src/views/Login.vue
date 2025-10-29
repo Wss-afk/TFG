@@ -25,7 +25,8 @@ export default {
         const { login } = await import('../services/auth.service.js')
         const res = await login(this.username, this.password)
         this.$store.dispatch('auth/login', { user: res.data })
-        this.$router.push('/chat')
+        const role = res.data && res.data.role
+        this.$router.push(role === 'SUPER_ADMIN' ? '/admin' : '/chat')
       } catch (error) {
         if (error.response && error.response.status === 401) {
           alert('用户名或密码错误');
