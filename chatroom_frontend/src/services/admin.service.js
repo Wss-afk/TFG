@@ -51,3 +51,30 @@ export function adminDeleteGroup(adminUserId, id) {
 export function adminUpdateGroupMembers(adminUserId, id, userIds) {
   return axios.put(API_URL + `groups/${id}/members`, { userIds }, adminHeaders(adminUserId))
 }
+
+// Audit
+export function adminGetAuditLogs(adminUserId, {
+  from = null,
+  to = null,
+  actorId = null,
+  action = null,
+  targetType = null,
+  targetId = null,
+  success = null,
+  page = 0,
+  size = 10
+} = {}) {
+  const config = adminHeaders(adminUserId)
+  config.params = {
+    from,
+    to,
+    actorId,
+    action,
+    targetType,
+    targetId,
+    success,
+    page,
+    size
+  }
+  return axios.get(API_URL + 'audit', config)
+}

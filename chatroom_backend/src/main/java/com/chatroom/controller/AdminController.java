@@ -31,6 +31,9 @@ public class AdminController {
     @Autowired
     private OnlineUserService onlineUserService;
 
+    @Autowired
+    private com.chatroom.service.AuditService auditService;
+
     // Simple guard: check header X-Admin-UserId belongs to SUPER_ADMIN
     private boolean isSuperAdmin(String adminUserIdHeader) {
         try {
@@ -70,9 +73,13 @@ public class AdminController {
         String username = user.getUsername() == null ? null : user.getUsername().trim();
         String password = user.getPassword() == null ? null : user.getPassword().trim();
         if (username == null || username.isEmpty()) {
+            auditService.logAdminAction(adminUserId, "USER_CREATE", "USER", null, user.getUsername(), false, 400,
+                    Map.of("error", "username required"), null, null);
             return ResponseEntity.badRequest().body("username required");
         }
         if (password == null || password.isEmpty()) {
+            auditService.logAdminAction(adminUserId, "USER_CREATE", "USER", null, user.getUsername(), false, 400,
+                    Map.of("error", "password required"), null, null);
             return ResponseEntity.badRequest().body("password required");
         }
         // Forzar rol y habilitación por defecto
@@ -80,11 +87,16 @@ public class AdminController {
         user.setEnabled(true);
         // simple uniqueness check
         if (userRepository.findByUsername(username).isPresent()) {
+            auditService.logAdminAction(adminUserId, "USER_CREATE", "USER", null, username, false, 400,
+                    Map.of("error", "Username already exists"), null, null);
             return ResponseEntity.badRequest().body("Username already exists");
         }
         user.setUsername(username);
         user.setPassword(password);
-        return ResponseEntity.ok(userRepository.save(user));
+        User saved = userRepository.save(user);
+        auditService.logAdminAction(adminUserId, "USER_CREATE", "USER", saved.getId(), saved.getUsername(), true, 200,
+                Map.of("role", saved.getRole().name()), null, null);
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/users/{id}")
@@ -104,9 +116,13 @@ public class AdminController {
         if (update.getUsername() != null && !update.getUsername().equals(u.getUsername())) {
             String newUsernameTrimmed = update.getUsername() == null ? null : update.getUsername().trim();
             if (newUsernameTrimmed == null || newUsernameTrimmed.isEmpty()) {
+                auditService.logAdminAction(adminUserId, "USER_UPDATE", "USER", u.getId(), u.getUsername(), false, 400,
+                        Map.of("error", "username required"), null, null);
                 return ResponseEntity.badRequest().body("username required");
             }
             if (userRepository.findByUsername(newUsernameTrimmed).isPresent()) {
+                auditService.logAdminAction(adminUserId, "USER_UPDATE", "USER", u.getId(), newUsernameTrimmed, false, 400,
+                        Map.of("error", "Username already exists"), null, null);
                 return ResponseEntity.badRequest().body("Username already exists");
             }
             u.setUsername(newUsernameTrimmed);
@@ -132,7 +148,15 @@ public class AdminController {
             } catch (Exception e) {
                 // best-effort; no bloquear la operación
             }
+            auditService.logAdminAction(adminUserId, "ACCOUNT_DISABLE", "USER", saved.getId(), saved.getUsername(), true, 200,
+                    Map.of("enabled", false), null, null);
         }
+        auditService.logAdminAction(adminUserId, "USER_UPDATE", "USER", saved.getId(), saved.getUsername(), true, 200,
+                Map.of(
+                        "usernameChanged", !saved.getUsername().equals(previousUsername),
+                        "role", saved.getRole().name(),
+                        "enabled", saved.isEnabled()
+                ), null, null);
         return ResponseEntity.ok(saved);
     }
 
@@ -144,6 +168,8 @@ public class AdminController {
         if (forbidden != null) return forbidden;
         String newPassword = body.get("newPassword");
         if (newPassword == null || newPassword.trim().isEmpty()) {
+            auditService.logAdminAction(adminUserId, "PASSWORD_CHANGE", "USER", id, null, false, 400,
+                    Map.of("error", "newPassword required"), null, null);
             return ResponseEntity.badRequest().body("newPassword required");
         }
         Optional<User> opt = userRepository.findById(id);
@@ -158,6 +184,8 @@ public class AdminController {
         } catch (Exception e) {
             // best-effort; si falla el envío, no bloquear la operación
         }
+        auditService.logAdminAction(adminUserId, "PASSWORD_CHANGE", "USER", saved.getId(), saved.getUsername(), true, 200,
+                Map.of("changed", true), null, null);
         return ResponseEntity.ok(saved);
     }
 
@@ -174,6 +202,8 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Cannot delete SUPER_ADMIN");
         }
         userRepository.deleteById(id);
+        auditService.logAdminAction(adminUserId, "USER_DELETE", "USER", id, opt.map(User::getUsername).orElse(null), true, 200,
+                Map.of(), null, null);
         return ResponseEntity.ok().build();
     }
 
@@ -232,6 +262,9 @@ public class AdminController {
             userRepository.findById(uid).ifPresent(members::add);
         }
         g.setUsers(members);
-        return ResponseEntity.ok(groupRepository.save(g));
+        Group saved = groupRepository.save(g);
+        auditService.logAdminAction(adminUserId, "GROUP_MEMBER_UPDATE", "GROUP", saved.getId(), saved.getName(), true, 200,
+                Map.of("memberCount", saved.getUsers() != null ? saved.getUsers().size() : 0), null, null);
+        return ResponseEntity.ok(saved);
     }
 }
