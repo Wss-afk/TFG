@@ -212,8 +212,8 @@ export default {
       try { return new Date(iso).toLocaleString() } catch { return iso }
     },
     formatRole(role) {
-      const map = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', USER: 'Usuario' }
-      return map[role] || role
+      // Unificar roles: excepto SUPER_ADMIN, todo se muestra como Usuario
+      return role === 'SUPER_ADMIN' ? 'Super Admin' : 'Usuario'
     },
     formatAction(a) {
       const map = {

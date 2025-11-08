@@ -5,7 +5,6 @@
       <select v-model="roleFilter" class="form-select" style="max-width:180px">
         <option value="">Todos los roles</option>
         <option value="USER">USER</option>
-        <option value="ADMIN">ADMIN</option>
         <option value="SUPER_ADMIN">SUPER_ADMIN</option>
       </select>
       <div class="ms-auto d-flex align-items-center gap-2">
@@ -37,7 +36,6 @@
         </div>
         <select v-model="newUser.role" class="form-select" style="max-width:180px">
           <option value="USER">USER</option>
-          <option value="ADMIN">ADMIN</option>
           <option value="SUPER_ADMIN">SUPER_ADMIN</option>
         </select>
         <button class="btn btn-success" @click="createUser">Crear</button>
@@ -71,7 +69,6 @@
             <td>
               <select v-model="u.role" class="form-select form-select-sm">
                 <option value="USER">USER</option>
-                <option value="ADMIN">ADMIN</option>
                 <option value="SUPER_ADMIN">SUPER_ADMIN</option>
               </select>
             </td>
@@ -184,7 +181,9 @@ export default {
       try {
         this.loading = true
         const res = await adminGetUsers(this.currentUser.id)
-        this.users = res.data
+        // Normalizar roles: mostrar ADMIN como USER en UI
+        const list = Array.isArray(res.data) ? res.data : []
+        this.users = list.map(u => ({ ...u, role: u.role === 'ADMIN' ? 'USER' : u.role }))
       } catch (error) {
         this.showToast('No se pudieron cargar los usuarios', 'error')
       } finally {

@@ -1,21 +1,22 @@
 /* Paleta y theme global para Admin y UI */
 :root {
-  --brand-gradient-start: #667eea;
-  --brand-gradient-end: #764ba2;
+  /* Paleta fresca, moderna y elegante */
+  --brand-gradient-start: #4f46e5; /* indigo-600 */
+  --brand-gradient-end: #06b6d4;   /* cyan-500 */
   --surface: #ffffff;
-  --surface-alt: #f8fafc;
-  --text-primary: #1f2937;
-  --text-muted: #6b7280;
-  --border-color: #e5e7eb;
+  --surface-alt: #f7f9fc;          /* fresco y limpio */
+  --text-primary: #0f172a;         /* slate-900 */
+  --text-muted: #64748b;           /* slate-500 */
+  --border-color: #e2e8f0;         /* slate-200 */
   --radius: 12px;
-  --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
 
   /* Variables usadas por Login.vue y otras vistas */
-  --color-primary: #20a0ff;
-  --color-secondary: #6b8afd;
-  --color-bg-gradient-start: #eef2ff;
-  --color-bg-gradient-end: #e0e7ff;
-  --color-text: #334155;
+  --color-primary: #0ea5e9;        /* sky-500 */
+  --color-secondary: #06b6d4;      /* cyan-500 */
+  --color-bg-gradient-start: #f0f9ff; /* sky-50 */
+  --color-bg-gradient-end: #ecfeff;   /* cyan-50 */
+  --color-text: #0f172a;           /* slate-900 */
 }
 
 /* Header del panel admin */
@@ -25,7 +26,7 @@
   border-radius: var(--radius);
   padding: 16px 20px;
   margin-bottom: 16px;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.28);
 }
 .admin-header .badge {
   background-color: rgba(255,255,255,0.18) !important;

@@ -1,24 +1,43 @@
-const userFromStorage = JSON.parse(localStorage.getItem('user'))
-const tokenFromStorage = localStorage.getItem('token')
 const state = {
-  user: userFromStorage,
-  token: tokenFromStorage
+  // Persistencia básica: rehidratamos desde localStorage en initialize()
+  user: null,
+  token: null
 }
 
 const mutations = {
   SET_USER(state, user) {
     state.user = user
-    localStorage.setItem('user', JSON.stringify(user))
+    try {
+      if (user) {
+        localStorage.setItem('auth_user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('auth_user')
+      }
+    } catch (e) {
+      // Ignorar errores de almacenamiento
+    }
   },
   SET_TOKEN(state, token) {
     state.token = token
-    localStorage.setItem('token', token)
+    try {
+      if (token) {
+        localStorage.setItem('auth_token', token)
+      } else {
+        localStorage.removeItem('auth_token')
+      }
+    } catch (e) {
+      // Ignorar errores de almacenamiento
+    }
   },
   LOGOUT(state) {
     state.user = null
     state.token = null
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
+    try {
+      localStorage.removeItem('auth_user')
+      localStorage.removeItem('auth_token')
+    } catch (e) {
+      // Ignorar errores de almacenamiento
+    }
   }
 }
 
@@ -27,13 +46,26 @@ const actions = {
     commit('SET_USER', user)
     commit('SET_TOKEN', token)
   },
+  initialize({ commit }) {
+    try {
+      const userStr = localStorage.getItem('auth_user')
+      const tokenStr = localStorage.getItem('auth_token')
+      const user = userStr ? JSON.parse(userStr) : null
+      const token = tokenStr || null
+      if (user) commit('SET_USER', user)
+      if (token) commit('SET_TOKEN', token)
+    } catch (e) {
+      // Si localStorage falla, no bloqueamos la app
+    }
+  },
   logout({ commit }) {
     commit('LOGOUT')
   }
 }
 
 const getters = {
-  isAuthenticated: state => !!state.token,
+  // Consideramos autenticado si hay usuario o token en memoria
+  isAuthenticated: state => !!state.user || !!state.token,
   currentUser: state => state.user
 }
 

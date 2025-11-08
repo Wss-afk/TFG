@@ -7,8 +7,10 @@ C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\entit
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\controller\UserController.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\repository\AuditLogRepository.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\websocket\WebSocketEventListener.java
+C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\controller\EventController.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\dto\GroupMembersUpdateRequest.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\service\OnlineUserService.java
+C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\entity\Event.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\config\WebSocketConfig.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\controller\ChatController.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\service\AuditService.java
@@ -16,6 +18,7 @@ C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\confi
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\entity\Group.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\entity\User.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\controller\AuditController.java
+C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\repository\EventRepository.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\config\DataInitializer.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\controller\UploadController.java
 C:\Users\Usuario\Desktop\TFG21\chatroom_backend\src\main\java\com\chatroom\ChatroomBackendApplication.java

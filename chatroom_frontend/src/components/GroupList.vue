@@ -1,14 +1,22 @@
 <template>
   <div class="group-list">
-    <ul>
-      <li v-for="group in groups" :key="group.id" @click="$emit('select', group)" class="group-item" :class="{ active: selectedGroup && selectedGroup.id === group.id }">
-        <div class="group-row">
-          <span class="group-name">{{ group.name }}</span>
-          <span v-if="groupUnreadCounts[group.id] > 0" class="unread-badge">{{ groupUnreadCounts[group.id] }}</span>
+    <transition-group name="list-fade" tag="ul" class="list">
+      <li
+        v-for="group in groups"
+        :key="group.id"
+        @click="$emit('select', group)"
+        class="row"
+        :class="{ active: selectedGroup && selectedGroup.id === group.id }"
+      >
+        <div class="info">
+          <div class="name">{{ group.name }}</div>
+          <div class="sub">{{ group.users ? group.users.length : 0 }} miembros</div>
         </div>
-        <span class="group-members">{{ group.users ? group.users.length : 0 }} miembros</span>
+        <div class="meta">
+          <span v-if="groupUnreadCounts[group.id] > 0" class="unread">{{ groupUnreadCounts[group.id] }}</span>
+        </div>
       </li>
-    </ul>
+    </transition-group>
   </div>
 </template>
 
@@ -33,71 +41,61 @@ export default {
 </script>
 
 <style scoped>
-.group-list {
-  padding: 8px 0;
-}
+.group-list { padding: 0; }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
 
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.group-item {
-  padding: 12px;
+.row {
+  padding: 12px 16px;
   cursor: pointer;
-  border-radius: 8px;
-  margin-bottom: 4px;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.group-item:hover {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.group-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.group-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  transition: transform .15s ease, color .15s ease;
+}
+.row:first-child { border-top: 1px solid var(--border-color); }
+.row:hover { background: transparent; transform: translateX(2px); }
+.row.active { background: transparent; }
+
+.row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0;
+  background: linear-gradient(180deg, var(--brand-gradient-start), var(--brand-gradient-end));
+  transition: width .2s ease;
+}
+.row:hover::before, .row.active::before { width: 3px; }
+
+.info { flex: 1; min-width: 0; }
+.name { font-weight: 600; color: #334155; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease; }
+.sub { font-size: 12px; color: #64748b; transition: color .15s ease; }
+.row:hover .name { color: var(--brand-gradient-start); }
+.row:hover .sub { color: #4b5563; }
+
+.meta { display: flex; align-items: center; gap: 8px; }
+.unread { background: #ef4444; color: #fff; border-radius: 9999px; min-width: 18px; height: 18px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; animation: badgePulse 1.4s ease-in-out infinite; }
+
+@media (max-width: 768px) {
+  .row { padding: 10px 14px; }
+  .name { font-size: 13px; }
+  .unread { min-width: 16px; height: 16px; font-size: 10px; }
 }
 
-.group-name {
-  font-weight: 600;
-  font-size: 14px;
+@media (max-width: 480px) {
+  .row { padding: 8px 12px; }
+  .name { font-size: 12px; }
 }
 
-.group-members {
-  font-size: 12px;
-  opacity: 0.7;
-}
+/* Animaciones */
+.list-fade-enter-active, .list-fade-leave-active { transition: all .2s ease; }
+.list-fade-enter-from, .list-fade-leave-to { opacity: 0; transform: translateY(4px); }
 
-.unread-badge {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  border-radius: 12px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  margin-left: 8px;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
 }
 </style>

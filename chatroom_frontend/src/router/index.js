@@ -7,9 +7,21 @@ const routes = [
     redirect: '/login'
   },
   {
+    path: '/home',
+    name: 'Home',
+    component: () => import('../views/Home.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/chat',
     name: 'ChatRoom',
     component: () => import('../views/Chat.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/events',
+    name: 'Events',
+    component: () => import('../views/Events.vue'),
     meta: { requiresAuth: true }
   },
   {
@@ -58,16 +70,25 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const currentUser = store.getters['auth/currentUser']
-  const isLoggedIn = !!currentUser
+  const hasUser = !!currentUser
+  const hasToken = store.getters['auth/isAuthenticated']
+  const isAuthenticated = hasUser || hasToken
 
+  // Si ya está autenticado, evitar mostrar login
+  if (to.path === '/login' && isAuthenticated) {
+    return next('/home')
+  }
+
+  // Proteger rutas que requieren autenticación
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       return next('/login')
     }
   }
 
+  // Proteger rutas de super admin
   if (to.matched.some(record => record.meta.requiresSuperAdmin)) {
-    if (!isLoggedIn || currentUser.role !== 'SUPER_ADMIN') {
+    if (!isAuthenticated || !currentUser || currentUser.role !== 'SUPER_ADMIN') {
       return next('/chat')
     }
   }

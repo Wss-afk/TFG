@@ -1,48 +1,88 @@
 <template>
   <div class="chat-page">
-    <div class="sidebar">
-      <div class="sidebar-brand">
-        <img class="brand-logo" src="@/assets/chatroom-logo.svg" alt="Chatroom" />
-        <div class="brand-text">
-          <span class="brand-name">Chatroom</span>
-          <span class="brand-sub">mensajería</span>
+    <AppDock />
+    <div class="content-area">
+      <header class="topbar">
+        <div class="left">
+          <h1 class="topbar-title">Messages</h1>
+          <span class="topbar-meta">6 Running Projects</span>
         </div>
-      </div>
-      <div class="sidebar-user">
-        <img v-if="currentUser && currentUser.avatarUrl" :src="currentUser.avatarUrl" class="sidebar-avatar" />
-        <span class="sidebar-username">{{ currentUser && currentUser.username }}</span>
-        <span class="self-badge" title="Este eres tú">Tú</span>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Usuarios</div>
-        <UserList :users="sortedUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" @select="selectUser" />
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Grupos</div>
-        <GroupList :groups="groups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" />
-      </div>
-    </div>
-    <div class="main-chat">
-      <ChatWindow 
-        ref="chatWindow"
-        :messages="messages" 
-        :chatUser="selectedUser" 
-        :chatGroup="selectedGroup"
-        :chatType="chatType"
-        :currentUserId="currentUser && currentUser.id">
-        <div class="chat-input-area">
-          <div class="chat-input-actions">
-            <button class="icon-btn" type="button" title="Emoji" @click="toggleEmojiPicker">😊</button>
-            <button class="icon-btn" type="button" title="Adjuntar" @click="triggerAttach">📎</button>
-            <input ref="fileInput" type="file" style="display:none" @change="handleFileSelected" />
+        <div class="center">
+          <div class="search">
+            <input type="text" placeholder="Search" v-model="searchQuery" />
+            <button type="button" class="search-btn" aria-label="Buscar">
+              <Icon name="search" :size="18" />
+            </button>
           </div>
-          <input v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
-          <button @click="send">Enviar</button>
         </div>
-        <div v-if="showEmojiPicker" class="emoji-picker">
-          <button v-for="e in emojis" :key="e" class="emoji-btn" @click="insertEmoji(e)" type="button">{{ e }}</button>
+        <div class="right">
+          <button type="button" class="add-btn" title="New" aria-label="Nuevo">
+            <Icon name="plus" :size="18" />
+          </button>
+          <div class="profile" v-if="currentUser">
+            <div v-if="!currentUser.avatarUrl" class="profile-avatar placeholder">{{ userInitials }}</div>
+            <img v-else :src="currentUser.avatarUrl" class="profile-avatar" />
+            <div class="profile-info">
+              <div class="profile-name">{{ currentUser.username }}</div>
+              <div class="profile-sub">My settings</div>
+            </div>
+          </div>
         </div>
-      </ChatWindow>
+      </header>
+      <div class="chat-body">
+        <div class="sidebar">
+        
+          <div class="chats-header">
+            <nav class="chats-tabs" role="tablist" aria-label="Listado de chats">
+              <button :class="['tab', activeTab === 'all' && 'active']" role="tab" aria-selected="activeTab==='all'" @click="activeTab='all'">All chats</button>
+              <button :class="['tab', activeTab === 'contacts' && 'active']" role="tab" aria-selected="activeTab==='contacts'" @click="activeTab='contacts'">My Contacts</button>
+              <button :class="['tab', activeTab === 'groups' && 'active']" role="tab" aria-selected="activeTab==='groups'" @click="activeTab='groups'">Groups</button>
+            </nav>
+          </div>
+          <div class="chats-card">
+            <template v-if="activeTab==='all'">
+              <UserList :users="sortedUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" :lastMessageMap="lastMessageMap" @select="selectUser" />
+              <div class="divider"></div>
+              <GroupList :groups="groups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" />
+            </template>
+            <template v-else-if="activeTab==='contacts'">
+              <UserList :users="sortedUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" :lastMessageMap="lastMessageMap" @select="selectUser" />
+            </template>
+            <template v-else>
+              <GroupList :groups="groups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" />
+            </template>
+          </div>
+        </div>
+        <div class="main-chat">
+          <ChatWindow 
+            ref="chatWindow"
+            :messages="messages" 
+            :chatUser="selectedUser" 
+            :chatGroup="selectedGroup"
+            :chatType="chatType"
+            :currentUserId="currentUser && currentUser.id">
+            <div class="chat-input-area">
+              <div class="chat-input-actions">
+                <button class="icon-btn" type="button" title="Emoji" aria-label="Emoji" @click="toggleEmojiPicker">
+                  <Icon name="smile" :size="18" />
+                </button>
+                <button class="icon-btn" type="button" title="Adjuntar" aria-label="Adjuntar" @click="triggerAttach">
+                  <Icon name="paperclip" :size="18" />
+                </button>
+                <input ref="fileInput" type="file" style="display:none" @change="handleFileSelected" />
+              </div>
+              <input v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
+              <button @click="send" class="send-btn" aria-label="Enviar">
+                <Icon name="send" :size="18" />
+                <span class="send-label">Enviar</span>
+              </button>
+            </div>
+            <div v-if="showEmojiPicker" class="emoji-picker">
+              <button v-for="e in emojis" :key="e" class="emoji-btn" @click="insertEmoji(e)" type="button">{{ e }}</button>
+            </div>
+          </ChatWindow>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -51,6 +91,8 @@
 import UserList from '../components/UserList.vue'
 import GroupList from '../components/GroupList.vue'
 import ChatWindow from '../components/ChatWindow.vue'
+import AppDock from '../components/AppDock.vue'
+import Icon from '../components/Icon.vue'
 import { mapGetters } from 'vuex'
 import { 
   disconnectWebSocket, 
@@ -62,17 +104,31 @@ import {
 
 export default {
   name: 'ChatPage',
-  components: { UserList, GroupList, ChatWindow },
+  components: { AppDock, UserList, GroupList, ChatWindow, Icon },
   computed: {
     ...mapGetters('auth', ['currentUser']),
+    userInitials() {
+      const name = (this.currentUser && this.currentUser.username) || ''
+      const parts = name.trim().split(/\s+/).filter(Boolean)
+      const initials = parts.slice(0, 2).map(p => (p[0] || '').toUpperCase()).join('')
+      return initials || 'U'
+    },
     sortedUsers() {
       if (!this.currentUser) return this.users;
       const others = this.users.filter(u => u.id !== this.currentUser.id);
       return [this.currentUser, ...others];
+    },
+    activeTabLabel() {
+      switch (this.activeTab) {
+        case 'contacts': return 'My Contacts';
+        case 'groups': return 'Groups';
+        default: return 'All chats';
+      }
     }
   },
   data() {
     return {
+      searchQuery: '',
       users: [],
       groups: [],
       messages: [],
@@ -89,7 +145,9 @@ export default {
       audioContext: null, // AudioContext para sonidos de notificación
       userHasInteracted: false, // Flag para saber si el usuario ha interactuado
       showEmojiPicker: false,
-      emojis: ['😀','😁','😂','😊','😍','😎','😘','😅','😉','🤩','🥳','😇','🙌','👍','👏','🔥','✨','❤️','💯','🎉']
+      emojis: ['😀','😁','😂','😊','😍','😎','😘','😅','😉','🤩','🥳','😇','🙌','👍','👏','🔥','✨','❤️','💯','🎉'],
+      activeTab: 'all',
+      lastMessageMap: {}
     }
   },
   methods: {
@@ -109,7 +167,12 @@ export default {
         
         const { fetchMessages, markMessagesAsRead } = await import('../services/chat.service.js')
         const res = await fetchMessages({ receiverId: user.id, userId: this.currentUser && this.currentUser.id })
-        this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        const sorted = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        this.messages = sorted
+        const last = sorted[sorted.length - 1]
+        if (last) {
+          this.lastMessageMap[user.id] = { content: last.content, timestamp: last.timestamp }
+        }
         
         // 标记消息为已读
           if (this.currentUser) {
@@ -155,6 +218,8 @@ export default {
              this.unreadCounts[senderId] = newCount
              console.log(`Usuario ${senderId} mensajes no leídos actualizados a:`, newCount)
            }
+          // Actualizar último mensaje del remitente
+          this.lastMessageMap[senderId] = { content: message.content, timestamp: message.timestamp }
         }
         
         // Mostrar notificación de escritorio solo para mensajes individuales
@@ -166,6 +231,7 @@ export default {
         this.playNotificationSound()
       }
     },
+    
     showNotification(message) {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(`Nuevo mensaje de ${message.sender.username}`, {
@@ -266,6 +332,8 @@ export default {
           }
           // Enviar via STOMP; la UI se actualiza solo cuando el servidor hace eco
           sendMessage('/app/chat/single', message)
+          // Actualizar hint de último mensaje en la lista
+          this.lastMessageMap[this.selectedUser.id] = { content, timestamp: message.timestamp }
         } else if (this.chatType === 'group' && this.selectedGroup) {
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username },
@@ -433,11 +501,11 @@ export default {
               disconnectWebSocket()
               this.wsConnected = false
               const reason = msg && (msg.reason || msg.detail || msg.message)
-              let text = 'Has sido desconectado por el administrador.'
+              let text = 'Has sido desconectado por un Super Admin.'
               if (reason === 'password_changed') {
-                text = 'Tu contraseña ha sido actualizada por el administrador. Has sido desconectado. Inicia sesión de nuevo.'
+                text = 'Tu contraseña ha sido actualizada por un Super Admin. Has sido desconectado. Inicia sesión de nuevo.'
               } else if (reason === 'account_disabled') {
-                text = 'Tu cuenta ha sido deshabilitada por el administrador. La conexión se ha cerrado.'
+                text = 'Tu cuenta ha sido deshabilitada por un Super Admin. La conexión se ha cerrado.'
               }
               alert(text)
               // Cerrar sesión y redirigir al login
@@ -520,7 +588,30 @@ export default {
       document.addEventListener('click', enableAudio)
       document.addEventListener('keydown', enableAudio)
       document.addEventListener('touchstart', enableAudio)
-    }
+    },
+    async populateInitialLastMessages() {
+      try {
+        const { fetchMessages } = await import('../services/chat.service.js')
+        const meId = this.currentUser && this.currentUser.id
+        const users = (this.sortedUsers || this.users).filter(u => u && u.id !== undefined)
+        const tasks = users.map(async (u) => {
+          try {
+            const res = await fetchMessages({ receiverId: u.id, userId: meId })
+            const arr = Array.isArray(res.data) ? res.data : []
+            if (arr.length) {
+              const last = arr[arr.length - 1]
+              this.lastMessageMap[u.id] = { content: last.content, timestamp: last.timestamp }
+            }
+          } catch (e) {
+            console.warn('No se pudo cargar último mensaje de usuario', u.id, e)
+          }
+        })
+        await Promise.allSettled(tasks)
+      } catch (e) {
+        console.error('Error al poblar últimos mensajes iniciales:', e)
+      }
+    },
+    
   },
   async mounted() {
     const { fetchUsers, fetchGroups } = await import('../services/user.service.js')
@@ -534,6 +625,9 @@ export default {
     
     // 获取未读消息数量
     await this.fetchUnreadCounts()
+    
+    // Poblar el último mensaje/hora para todos los usuarios al iniciar
+    await this.populateInitialLastMessages()
     
     // 初始化WebSocket连接
     this.initWebSocketConnection()
@@ -561,35 +655,70 @@ export default {
 <style scoped>
 /* 页面整体背景渐变 */
 body {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
   min-height: 100vh;
 }
 
 .chat-page {
   display: flex;
-  max-width: 1200px;
-  margin: 20px auto;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 20px;
-  box-shadow: 
-    0 20px 40px rgba(0,0,0,0.1),
-    0 8px 16px rgba(0,0,0,0.06),
-    inset 0 1px 0 rgba(255,255,255,0.8);
-  /* Fijamos altura para que el área de mensajes pueda hacer scroll */
-  height: calc(100vh - 40px);
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  background: linear-gradient(145deg, var(--surface) 0%, var(--surface-alt) 100%);
+  border-radius: 0;
+  box-shadow: none;
   min-height: 0;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
+  backdrop-filter: none;
+  border: none;
 }
+
+.content-area { display: flex; flex-direction: column; flex: 1; }
+.chat-body { display: flex; flex: 1; min-height: 0; }
+
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+.topbar-title { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.topbar-meta { color: var(--text-muted); font-weight: 600; margin-left: 12px; }
+.left { display: flex; align-items: center; gap: 12px; }
+.center { display: flex; justify-content: center; }
+.right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+
+.search { display: flex; gap: 8px; background: var(--surface-alt); padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8); }
+.search input { border: none; background: transparent; outline: none; min-width: 220px; font-size: 14px; }
+.search-btn { border: none; background: var(--color-bg-gradient-start); color: var(--brand-gradient-start); border-radius: 10px; padding: 6px 10px; cursor: pointer; }
+
+.add-btn { border: none; background: var(--color-bg-gradient-start); color: var(--brand-gradient-start); border-radius: 10px; padding: 8px 12px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); }
+.logout-btn { border: none; background: var(--color-bg-gradient-start); color: var(--brand-gradient-start); border-radius: 10px; padding: 8px 12px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); }
+.profile { display: flex; align-items: center; gap: 10px; padding-left: 8px; border-left: 1px solid var(--border-color); }
+.profile-avatar { width: 28px; height: 28px; border-radius: 50%; }
+.profile-avatar.placeholder {
+  background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.profile-name { font-weight: 700; color: var(--text-primary); }
+.profile-sub { font-size: 12px; color: var(--text-muted); }
 
 .sidebar {
   width: 280px;
-  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(180deg, var(--surface-alt) 0%, var(--surface) 100%);
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  border-right: 1px solid rgba(226, 232, 240, 0.8);
+  border-right: 1px solid var(--border-color);
   position: relative;
 }
 
@@ -608,8 +737,8 @@ body {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: #ffffff;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .brand-logo {
@@ -626,12 +755,12 @@ body {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+  background: linear-gradient(180deg, var(--surface-alt) 0%, var(--surface) 100%);
   color: #334155;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.2px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  border-bottom: 1px solid var(--border-color);
   box-shadow: none;
 }
 
@@ -661,59 +790,30 @@ body {
   font-weight: 500;
 }
 
-.self-badge {
-  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
-  color: #ffffff;
-  border-radius: 9999px;
-  padding: 4px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  margin-left: auto;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
-}
+/* self-badge eliminado */
 
-.sidebar-section {
-  padding: 24px 0 0 0;
-  position: relative;
-}
+.chats-header { padding: 16px 20px 8px 20px; display: flex; align-items: baseline; justify-content: flex-start; }
+.chats-title { display: none; }
+.chats-tabs { display: flex; gap: 12px; }
+.tab { background: transparent; border: none; color: #64748b; font-weight: 600; padding: 6px 10px; border-radius: 10px; cursor: pointer; }
+.tab.active { color: var(--brand-gradient-start); background: var(--color-bg-gradient-start); }
 
-.sidebar-section:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 20px;
-  right: 20px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.3), transparent);
+.chats-card {
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
-
-.sidebar-title {
-  font-size: 1.1em;
-  font-weight: 600;
-  color: #334155;
-  margin: 0 0 16px 24px;
-  letter-spacing: 0.5px;
-  position: relative;
-}
-
-.sidebar-title::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 2px;
-}
+.divider { height: 1px; margin: 8px 12px; background: linear-gradient(90deg, transparent, rgba(148,163,184,0.35), transparent); }
 
 .main-chat {
   flex: 1;
   display: flex;
   flex-direction: column;
   padding: 24px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-alt) 100%);
   position: relative;
   /* Permite que el hijo (ChatWindow) pueda contraerse y mostrar scroll interno */
   min-height: 0;
@@ -734,20 +834,18 @@ body {
   gap: 12px;
   margin-top: 20px;
   padding: 20px;
-  background: linear-gradient(145deg, #f8fafc 0%, #ffffff 100%);
-  border-radius: 16px;
-  box-shadow: 
-    0 4px 12px rgba(0,0,0,0.05),
-    inset 0 1px 0 rgba(255,255,255,0.8);
-  border: 1px solid rgba(226, 232, 240, 0.6);
+  background: linear-gradient(145deg, var(--surface-alt) 0%, var(--surface) 100%);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
 }
 
 .chat-input-area input {
   flex: 1;
   padding: 14px 18px;
-  border-radius: 12px;
-  border: 2px solid rgba(226, 232, 240, 0.6);
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: linear-gradient(145deg, var(--surface) 0%, var(--surface-alt) 100%);
   font-size: 14px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
@@ -755,7 +853,7 @@ body {
 
 .chat-input-area input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--brand-gradient-start);
   box-shadow: 
     0 0 0 3px rgba(102, 126, 234, 0.1),
     inset 0 2px 4px rgba(0,0,0,0.02);
@@ -764,17 +862,15 @@ body {
 
 .chat-input-area button {
   padding: 14px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
   color: #fff;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    0 4px 12px rgba(102, 126, 234, 0.3),
-    0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
 }
@@ -832,7 +928,7 @@ body {
 /* 响应式设计 - 平板设备 */
 @media (max-width: 1024px) {
   .chat-page {
-    margin: 10px;
+    margin: 0;
     max-width: none;
     min-height: 600px;
   }
@@ -851,9 +947,9 @@ body {
 @media (max-width: 768px) {
   .chat-page {
     flex-direction: column;
-    margin: 5px;
-    border-radius: 16px;
-    min-height: calc(100vh - 10px);
+    margin: 0;
+    border-radius: 0;
+    min-height: 100vh;
   }
   
   .sidebar {
@@ -939,9 +1035,9 @@ body {
 .emoji-picker {
   margin-top: 8px;
   padding: 8px;
-  background: #fff;
-  border: 1px solid rgba(226,232,240,0.6);
-  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   display: flex;
   flex-wrap: wrap;

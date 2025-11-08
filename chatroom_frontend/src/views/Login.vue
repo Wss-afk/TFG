@@ -30,12 +30,11 @@ export default {
         const { login } = await import('../services/auth.service.js')
         const res = await login(this.username, this.password)
         this.$store.dispatch('auth/login', { user: res.data })
-        const role = res.data && res.data.role
-        this.$router.push(role === 'SUPER_ADMIN' ? '/admin' : '/chat')
+        this.$router.push('/home')
       } catch (error) {
         if (error.response) {
           if (error.response.status === 403) {
-            alert('Tu cuenta ha sido deshabilitada por el administrador');
+            alert('Tu cuenta ha sido deshabilitada por un Super Admin');
           } else if (error.response.status === 401) {
             alert('Usuario o contraseña incorrectos');
           } else {
