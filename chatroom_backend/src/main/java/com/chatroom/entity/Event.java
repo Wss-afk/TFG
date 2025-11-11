@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
@@ -31,4 +33,14 @@ public class Event {
 
     @Column(length = 255)
     private String description; // descripción opcional del evento
+
+    // Nuevo: identificador del creador del evento (usuario)
+    @Column(name = "created_by_id")
+    private Long createdById;
+
+    // Nuevo: lista de responsables (ids de usuario) usando tabla intermedia sencilla
+    @ElementCollection
+    @CollectionTable(name = "event_responsible_ids", joinColumns = @JoinColumn(name = "event_id"))
+    @Column(name = "user_id")
+    private List<Long> responsibleIds = new ArrayList<>();
 }

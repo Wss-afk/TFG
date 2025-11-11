@@ -43,6 +43,13 @@ export default {
   computed: {
     ...mapGetters('auth', ['currentUser']),
     items() {
+      // Si es SUPER_ADMIN, limitar el dock al panel de admin
+      if (this.currentUser && this.currentUser.role === 'SUPER_ADMIN') {
+        return [
+          { label: 'Admin', icon: '🛡️', path: '/admin' },
+          { label: 'Setting', icon: '⚙️', path: null }
+        ]
+      }
       return [
         { label: 'Home', icon: '🏠', path: '/home' },
         { label: 'Eventos', icon: '📆', path: '/events' },

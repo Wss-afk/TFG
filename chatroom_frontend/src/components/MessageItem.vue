@@ -1,24 +1,27 @@
 <template>
-  <div :class="['message-item', isMine ? 'mine' : '']">
-    <span class="sender">{{ typeof message.sender === 'object' && message.sender ? message.sender.username : message.sender }}:</span>
-    <div class="content">
-      <template v-if="message.type === 'image' && message.fileUrl">
-        <a :href="message.fileUrl" target="_blank" rel="noopener noreferrer">
-          <img :src="message.fileUrl" alt="imagen adjunta" class="attachment-image" />
-        </a>
-        <div v-if="message.content" class="caption">{{ message.content }}</div>
-      </template>
-      <template v-else-if="message.type === 'file' && message.fileUrl">
-        <a :href="message.fileUrl" target="_blank" rel="noopener noreferrer" class="attachment-file">
-          <Icon name="paperclip" :size="18" />
-          <span class="file-label">{{ message.content || 'Archivo' }}</span>
-        </a>
-      </template>
-      <template v-else>
-        {{ message.content }}
-      </template>
+  <div :class="['message-row', isMine ? 'mine' : '']">
+    <div class="avatar" :class="isMine ? 'mine' : ''" :title="senderName">{{ senderInitial }}</div>
+    <div :class="['message-item', isMine ? 'mine' : '']">
+      <span class="sender">{{ typeof message.sender === 'object' && message.sender ? message.sender.username : message.sender }}:</span>
+      <div class="content">
+        <template v-if="message.type === 'image' && message.fileUrl">
+          <a :href="message.fileUrl" target="_blank" rel="noopener noreferrer">
+            <img :src="message.fileUrl" alt="imagen adjunta" class="attachment-image" />
+          </a>
+          <div v-if="message.content" class="caption">{{ message.content }}</div>
+        </template>
+        <template v-else-if="message.type === 'file' && message.fileUrl">
+          <a :href="message.fileUrl" target="_blank" rel="noopener noreferrer" class="attachment-file">
+            <Icon name="paperclip" :size="18" />
+            <span class="file-label">{{ message.content || 'Archivo' }}</span>
+          </a>
+        </template>
+        <template v-else>
+          {{ message.content }}
+        </template>
+      </div>
+      <span class="timestamp">{{ formattedTime }}</span>
     </div>
-    <span class="timestamp">{{ formattedTime }}</span>
   </div>
 </template>
 
@@ -44,6 +47,16 @@ export default {
       }
       return this.message.sender == this.currentUserId;
     },
+    senderName() {
+      const s = this.message && this.message.sender
+      if (!s) return ''
+      if (typeof s === 'object') return s.username || s.name || ''
+      return String(s)
+    },
+    senderInitial() {
+      const n = this.senderName || ''
+      return n ? n.charAt(0).toUpperCase() : '?'
+    },
     formattedTime() {
       if (!this.message.timestamp) return '';
       const date = new Date(this.message.timestamp);
@@ -54,12 +67,17 @@ export default {
 </script>
 
 <style scoped>
+.message-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 8px; }
+.message-row.mine { flex-direction: row-reverse; justify-content: flex-start; }
+
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--color-bg-gradient-start), var(--color-bg-gradient-end)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.12); flex: 0 0 28px; }
+.avatar.mine { background: linear-gradient(135deg, var(--color-secondary), #2563eb); }
+
 .message-item {
   margin-bottom: 12px;
   padding: 10px 14px;
   border-radius: 18px;
   max-width: 68%;
-  clear: both;
   display: inline-block;
   position: relative;
   word-wrap: break-word;
@@ -83,7 +101,6 @@ export default {
 .message-item.mine {
   background: var(--color-secondary);
   color: #ffffff;
-  float: right;
   text-align: left;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
 }
@@ -93,7 +110,6 @@ export default {
 .message-item:not(.mine) {
   background: var(--color-bg-gradient-start);
   color: var(--text-primary);
-  float: left;
   text-align: left;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid var(--border-color);

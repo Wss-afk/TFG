@@ -30,7 +30,8 @@ export default {
         const { login } = await import('../services/auth.service.js')
         const res = await login(this.username, this.password)
         this.$store.dispatch('auth/login', { user: res.data })
-        this.$router.push('/home')
+        const role = res.data?.role
+        this.$router.push(role === 'SUPER_ADMIN' ? '/admin' : '/home')
       } catch (error) {
         if (error.response) {
           if (error.response.status === 403) {

@@ -1,10 +1,32 @@
 <template>
   <div class="chat-window">
-    <div class="chat-header" v-if="chatUser && chatType === 'user'">
-      Conversación con <b>{{ chatUser.username }}</b>
+    <div class="chat-topbar" v-if="chatUser && chatType === 'user'">
+      <div class="left">
+        <div class="avatar" :title="chatUser.username">{{ userInitial }}</div>
+        <div class="meta">
+          <div class="name">{{ chatUser.username }}</div>
+          <div class="sub">{{ chatUser.email || chatUser.userEmail || 'Conversación privada' }}</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" type="button" title="Más opciones" aria-label="Más opciones">
+          <Icon name="more-vertical" :size="18" />
+        </button>
+      </div>
     </div>
-    <div class="chat-header" v-else-if="chatGroup && chatType === 'group'">
-      Grupo: <b>{{ chatGroup.name }}</b>
+    <div class="chat-topbar" v-else-if="chatGroup && chatType === 'group'">
+      <div class="left">
+        <div class="avatar group" :title="chatGroup.name">{{ groupInitial }}</div>
+        <div class="meta">
+          <div class="name">{{ chatGroup.name }}</div>
+          <div class="sub">{{ (chatGroup.users && chatGroup.users.length) ? (chatGroup.users.length + ' miembros') : 'Grupo' }}</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" type="button" title="Opciones del grupo" aria-label="Opciones del grupo">
+          <Icon name="more-vertical" :size="18" />
+        </button>
+      </div>
     </div>
     <div v-if="chatGroup && chatType === 'group'" class="group-members-bar">
       <span class="members-title">Miembros:</span>
@@ -45,10 +67,11 @@
 <script>
 import MessageItem from './MessageItem.vue'
 import DateSeparator from './DateSeparator.vue'
+import Icon from './Icon.vue'
 
 export default {
   name: 'ChatWindow',
-  components: { MessageItem, DateSeparator },
+  components: { MessageItem, DateSeparator, Icon },
   props: {
     messages: { type: Array, required: true },
     chatUser: { type: Object, default: null },
@@ -75,6 +98,14 @@ export default {
       const end = this.allItems.length
       const start = Math.max(0, Math.min(this.startIndex, end))
       return this.allItems.slice(start, end)
+    },
+    userInitial() {
+      const name = (this.chatUser && (this.chatUser.username || this.chatUser.name)) || ''
+      return name ? name.charAt(0).toUpperCase() : '?'
+    },
+    groupInitial() {
+      const name = (this.chatGroup && this.chatGroup.name) || ''
+      return name ? name.charAt(0).toUpperCase() : '#'
     }
   },
   watch: {
@@ -193,22 +224,24 @@ export default {
   min-height: 0;
 }
 
-.chat-header {
-  background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
-  color: white;
-  padding: 16px 20px;
-  border-radius: var(--radius);
-  margin-bottom: 20px;
-  text-align: center;
-  font-weight: 600;
-  font-size: 16px;
-  box-shadow: var(--shadow);
+.chat-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-soft);
 }
-
-.chat-header b {
-  color: #ffd700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
+.chat-topbar .left { display: flex; align-items: center; gap: 12px; }
+.chat-topbar .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.chat-topbar .avatar.group { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.chat-topbar .meta { display: flex; flex-direction: column; }
+.chat-topbar .name { color: #334155; font-weight: 600; }
+.chat-topbar .sub { color: #64748b; font-size: 12px; }
+.chat-topbar .actions .icon-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: #fff; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); cursor: pointer; }
 
 .messages {
   position: relative;

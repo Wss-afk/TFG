@@ -76,6 +76,10 @@ router.beforeEach((to, from, next) => {
 
   // Si ya está autenticado, evitar mostrar login
   if (to.path === '/login' && isAuthenticated) {
+    // Redirigir según rol
+    if (currentUser && currentUser.role === 'SUPER_ADMIN') {
+      return next('/admin')
+    }
     return next('/home')
   }
 
@@ -90,6 +94,14 @@ router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresSuperAdmin)) {
     if (!isAuthenticated || !currentUser || currentUser.role !== 'SUPER_ADMIN') {
       return next('/chat')
+    }
+  }
+
+  // Forzar que un SUPER_ADMIN solo navegue por /admin
+  if (isAuthenticated && currentUser && currentUser.role === 'SUPER_ADMIN') {
+    const isAdminRoute = to.path.startsWith('/admin')
+    if (!isAdminRoute) {
+      return next('/admin')
     }
   }
 

@@ -66,16 +66,30 @@
         <!-- Columna derecha: Notification + Team Chat -->
         <section class="notification-card">
           <header class="card-header">
-            <div class="card-title">Notification</div>
-            <a href="#" class="view-all">View all</a>
+            <div class="card-title">Notification <span class="muted">({{ notifications.length }})</span></div>
+            <router-link to="/chat" class="view-all">View all</router-link>
           </header>
-          <div class="notice">
+          <div class="notice" v-if="notifications.length === 0">
             <div class="notice-header">
-              <div class="notice-title">Emily just sent you task to assign</div>
-              <div class="notice-date">18 Aug 2020 · 10:00 AM</div>
+              <div class="notice-title">No hay nuevas notificaciones</div>
+              <div class="notice-date">—</div>
             </div>
-            <button class="assign-btn">Assign here</button>
           </div>
+          <ul class="notifications-list" v-else>
+            <li class="notification-item" v-for="n in notifications" :key="n.key">
+              <div class="notification-main">
+                <div class="notification-title">
+                  <span class="badge" :class="n.type">{{ n.type === 'group' ? 'Grupo' : 'Mensaje' }}</span>
+                  <span class="strong">{{ n.title }}</span>
+                </div>
+                <div class="notification-text">{{ n.text }}</div>
+                <div class="notification-meta">{{ n.when }}</div>
+              </div>
+              <div class="notification-actions">
+                <button class="assign-btn" @click="viewNotification(n)">Ver</button>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <section class="teamchat-card">
@@ -114,6 +128,9 @@ import AppDock from '../components/AppDock.vue'
 import Icon from '../components/Icon.vue'
 import { mapGetters } from 'vuex'
 import { fetchMonthEvents } from '../services/events.service.js'
+import { connectWebSocket, subscribe, disconnectWebSocket } from '../services/websocket.js'
+import { markMessagesAsRead } from '../services/chat.service.js'
+import { fetchGroups } from '../services/user.service.js'
 export default {
   name: 'Home',
   components: { AppDock, Icon },
@@ -132,8 +149,13 @@ export default {
       weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       leadingBlanks: Array(first.getDay()).fill(0),
       daysInMonth: Array.from({ length: last.getDate() }, (_, i) => i + 1),
-      events: []
-    }
+      events: [],
+      notifications: [],
+      wsConnected: false,
+      globalSubscription: null,
+      groupSubscriptions: {},
+      groups: []
+  }
   },
   computed: {
     ...mapGetters('auth', ['currentUser']),
@@ -195,14 +217,117 @@ export default {
     },
     isToday(day) {
       return this.year === this.todayYear && this.month === this.todayMonth && day === this.todayDay
+    },
+    initWebSocketConnection() {
+      if (!this.currentUser) return
+      connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
+        this.wsConnected = true
+        // Suscripción a mensajes directos del usuario
+        this.subscribeToGlobalUserChannel()
+        // Suscripción a canales de grupo
+        this.subscribeToAllGroupChannels()
+      }, (err) => {
+        console.error('Error de WebSocket en Home:', err)
+        this.wsConnected = false
+      })
+    },
+    subscribeToGlobalUserChannel() {
+      const topic = '/user/queue/messages'
+      this.globalSubscription = subscribe(topic, (msg) => {
+        const senderId = (msg && msg.sender && (msg.sender.id ?? msg.sender.userId)) || msg.senderId
+        const senderName = (msg && msg.sender && msg.sender.username) || 'Usuario'
+        const text = (msg && msg.content) || '[Mensaje]'
+        const when = this.formatTime(msg && msg.timestamp)
+        const key = `user-${senderId}-${msg.id || when}`
+        this.notifications.unshift({
+          key,
+          type: 'user',
+          title: senderName,
+          text,
+          when,
+          senderId
+        })
+      })
+    },
+    async loadGroups() {
+      try {
+        const res = await fetchGroups()
+        this.groups = Array.isArray(res.data) ? res.data : []
+      } catch (e) {
+        this.groups = []
+      }
+    },
+    subscribeToGroupChannel(groupId) {
+      const topic = `/topic/group/${groupId}`
+      if (this.groupSubscriptions[groupId]) {
+        this.groupSubscriptions[groupId].unsubscribe()
+      }
+      this.groupSubscriptions[groupId] = subscribe(topic, (msg) => {
+        const group = msg && msg.group
+        const title = (group && (group.name || `Grupo ${group.id}`)) || `Grupo ${groupId}`
+        const text = (msg && msg.content) || '[Mensaje de grupo]'
+        const when = this.formatTime(msg && msg.timestamp)
+        const key = `group-${groupId}-${msg.id || when}`
+        this.notifications.unshift({
+          key,
+          type: 'group',
+          title,
+          text,
+          when,
+          groupId
+        })
+      })
+    },
+    subscribeToAllGroupChannels() {
+      if (!Array.isArray(this.groups)) return
+      for (const g of this.groups) {
+        if (g && g.id) {
+          this.subscribeToGroupChannel(g.id)
+        }
+      }
+    },
+    formatTime(ts) {
+      try {
+        const d = ts ? new Date(ts) : new Date()
+        return d.toLocaleString()
+      } catch (e) {
+        return '—'
+      }
+    },
+    async viewNotification(n) {
+      try {
+        if (n.type === 'user' && this.currentUser && n.senderId != null) {
+          await markMessagesAsRead(this.currentUser.id, n.senderId)
+          // Eliminar todas las notificaciones del mismo remitente
+          this.notifications = this.notifications.filter(x => !(x.type === 'user' && x.senderId === n.senderId))
+        } else if (n.type === 'group' && n.groupId != null) {
+          // Eliminar notificaciones del grupo
+          this.notifications = this.notifications.filter(x => !(x.type === 'group' && x.groupId === n.groupId))
+        }
+      } catch (e) {
+        console.warn('No se pudo marcar como leído:', e)
+      }
+      // Navegar a chat para ver el mensaje
+      this.$router.push('/chat')
     }
   },
   async mounted() {
     await this.loadMonth()
+    await this.loadGroups()
+    this.initWebSocketConnection()
   },
   watch: {
     month() { this.loadMonth() },
     year() { this.loadMonth() }
+  },
+  beforeUnmount() {
+    try {
+      if (this.globalSubscription) this.globalSubscription.unsubscribe()
+      Object.values(this.groupSubscriptions).forEach(s => s && s.unsubscribe())
+      disconnectWebSocket()
+    } catch (e) {
+      console.error('Error al limpiar suscripciones en Home:', e)
+    }
   }
 }
 </script>
@@ -254,6 +379,15 @@ export default {
 .notice-title { font-weight: 800; margin-bottom: 6px; }
 .notice-date { opacity: .9; font-weight: 600; }
 .assign-btn { margin-top: 10px; background: #fff; color: var(--brand-gradient-start); border: none; border-radius: 10px; padding: 6px 10px; font-weight: 700; cursor: pointer; }
+.notifications-list { list-style: none; margin: 8px 12px 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.notification-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; }
+.notification-main { display: flex; flex-direction: column; gap: 4px; }
+.notification-title { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--text-primary); }
+.notification-text { color: var(--text-primary); font-weight: 600; }
+.notification-meta { color: var(--text-muted); font-weight: 600; font-size: 12px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 800; }
+.badge.user { background: #dbeafe; color: #1e40af; }
+.badge.group { background: #fee2e2; color: #991b1b; }
 
 .teamchat-card .mini-chat { padding: 6px 12px; display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; }
 .right-actions { display: flex; align-items: center; gap: 10px; }

@@ -62,6 +62,9 @@
             :chatType="chatType"
             :currentUserId="currentUser && currentUser.id">
             <div class="chat-input-area">
+              <div v-if="currentUser" class="me-avatar" :title="currentUser.username || currentUser.name">
+                {{ (currentUser.username || currentUser.name || '?').charAt(0).toUpperCase() }}
+              </div>
               <div class="chat-input-actions">
                 <button class="icon-btn" type="button" title="Emoji" aria-label="Emoji" @click="toggleEmojiPicker">
                   <Icon name="smile" :size="18" />
@@ -464,14 +467,18 @@ export default {
         console.log('Suscripción al canal de mensajes:', topic)
         this.globalSubscription = subscribe(topic, (msg) => {
           console.log('Nuevo mensaje recibido:', msg)
-          // 处理接收到的消息
+          // Procesar métricas/contador, notificaciones, etc.
           this.handleNewMessage(msg)
-          
-          // 当当前选中用户就是消息发送者，直接追加到当前消息列表，避免延迟
+
+          // Añadir al hilo si pertenece al chat usuario actual,
+          // ya sea como remitente o como receptor.
           const senderId = (msg && msg.sender && (msg.sender.id ?? msg.sender.userId)) || msg.senderId
-          if (this.chatType === 'user' && this.selectedUser && senderId === this.selectedUser.id) {
+          const receiverId = (msg && msg.receiver && (msg.receiver.id ?? msg.receiver.userId)) || msg.receiverId
+          const isUserChat = this.chatType === 'user' && !!this.selectedUser
+          const belongsToCurrentChat = isUserChat && (senderId === this.selectedUser.id || receiverId === this.selectedUser.id)
+
+          if (belongsToCurrentChat) {
             this.messages.push(msg)
-            // Scroll to bottom after adding message
             this.$nextTick(() => {
               this.scrollToBottom()
             })
@@ -839,6 +846,8 @@ body {
   box-shadow: var(--shadow);
   border: 1px solid var(--border-color);
 }
+
+.me-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
 
 .chat-input-area input {
   flex: 1;

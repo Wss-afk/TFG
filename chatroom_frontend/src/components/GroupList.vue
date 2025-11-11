@@ -46,6 +46,7 @@ export default {
 
 .row {
   padding: 12px 16px;
+  padding-right: 36px; /* espacio para el contador a la derecha */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -76,11 +77,11 @@ export default {
 .row:hover .name { color: var(--brand-gradient-start); }
 .row:hover .sub { color: #4b5563; }
 
-.meta { display: flex; align-items: center; gap: 8px; }
+.meta { position: absolute; right: 12px; top: 12px; transform: none; display: flex; align-items: center; gap: 8px; z-index: 1; }
 .unread { background: #ef4444; color: #fff; border-radius: 9999px; min-width: 18px; height: 18px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; animation: badgePulse 1.4s ease-in-out infinite; }
 
 @media (max-width: 768px) {
-  .row { padding: 10px 14px; }
+  .row { padding: 10px 14px; padding-right: 34px; }
   .name { font-size: 13px; }
   .unread { min-width: 16px; height: 16px; font-size: 10px; }
 }
