@@ -19,14 +19,32 @@
 
     <div class="card mb-3">
       <div class="card-header">Crear grupo</div>
-      <div class="card-body d-flex flex-wrap gap-2">
-        <input v-model="newGroup.name" class="form-control" placeholder="Nombre del grupo" style="max-width:260px" />
-        <button class="btn btn-success" @click="createGroup">Crear</button>
+      <div class="card-body">
+        <div class="create-group">
+          <div class="mb-2">
+            <label class="form-label">Nombre del grupo</label>
+            <input v-model="newGroup.name" class="form-control" placeholder="p.ej. Ventas Norte" />
+            <small class="text-muted">Escribe un nombre para habilitar los miembros.</small>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <button class="btn btn-success" @click="createGroup" :disabled="!hasName">Crear</button>
+            <span class="text-muted" v-if="newGroup.memberIds.length">Miembros seleccionados: {{ newGroup.memberIds.length }}</span>
+          </div>
+          <div>
+            <label class="form-label text-muted">Asignar miembros</label>
+            <div class="members-list" :class="{ 'members-disabled': !hasName }">
+              <label v-for="u in users" :key="'c-'+u.id" class="member-item">
+                <input type="checkbox" :value="u.id" v-model="newGroup.memberIds" :disabled="!hasName" />
+                {{ u.username }}
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="row g-3">
-      <div class="col-lg-6">
+      <div class="col-12">
         <div class="card">
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -48,12 +66,12 @@
               <tr v-for="g in pagedGroups" :key="g.id" :class="{ 'table-active': selectedGroup && selectedGroup.id === g.id }" @click="selectGroup(g)">
                 <td>{{ g.id }}</td>
                 <td>
-                  <input v-model="g.name" class="form-control form-control-sm" />
+                  <span class="group-name-text">{{ g.name }}</span>
                 </td>
                 <td>{{ (g.users || []).length }}</td>
                 <td>
-                  <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary btn-sm" @click.stop="updateGroup(g)">Guardar</button>
+                  <div class="d-flex align-items-center gap-2 flex-nowrap actions-row">
+                    <button class="btn btn-secondary btn-sm" @click.stop="editGroup(g)">Editar</button>
                     <button class="btn btn-danger btn-sm" @click.stop="deleteGroup(g)">Eliminar</button>
                   </div>
                 </td>
@@ -78,24 +96,36 @@
           </ul>
         </nav>
       </div>
+    </div>
 
-      <div class="col-lg-6" v-if="selectedGroup">
-        <div class="card">
-          <div class="card-header d-flex align-items-center justify-content-between">
-            <span>Miembros del grupo: <b>{{ selectedGroup.name }}</b></span>
-            <div class="d-flex gap-2 align-items-center">
-              <input v-model="memberSearch" class="form-control form-control-sm" placeholder="Buscar miembros..." style="max-width:180px" />
-              <button class="btn btn-success btn-sm" :disabled="!hasMemberChanges" @click="saveGroupMembers">Guardar cambios</button>
-            </div>
+    <!-- Modal de edición de grupo -->
+    <div v-if="editModalOpen" class="modal-backdrop-custom">
+      <div class="modal-custom" role="dialog" aria-modal="true" aria-labelledby="editGroupModalTitle">
+        <div class="modal-header d-flex justify-content-between align-items-center">
+          <h5 id="editGroupModalTitle" class="m-0">Editar grupo</h5>
+          <button type="button" class="btn-close" @click="closeEdit"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap gap-2 align-items-start mb-3">
+            <input v-model="editName" class="form-control" placeholder="Nombre del grupo" style="max-width:280px" />
+            <button class="btn btn-primary" @click="saveEditName" :disabled="!editNameChanged">Guardar nombre</button>
+            <button class="btn btn-outline-danger" @click="confirmDelete">Eliminar grupo</button>
           </div>
-          <div class="card-body" style="max-height:380px; overflow:auto">
-            <div class="members-list">
-              <label v-for="u in filteredMembers" :key="'m-'+u.id" class="member-item">
-                <input type="checkbox" :value="u.id" v-model="selectedMemberIds" />
-                {{ u.username }}
-              </label>
-            </div>
+
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <input v-model="memberSearch" class="form-control" placeholder="Buscar miembros..." style="max-width:220px" />
+            <button class="btn btn-success" @click="saveEditMembers" :disabled="!editMembersChanged">Guardar miembros</button>
           </div>
+          <div class="members-list">
+            <label v-for="u in filteredMembers" :key="'e-'+u.id" class="member-item">
+              <input type="checkbox" :value="u.id" v-model="editMemberIds" />
+              {{ u.username }}
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-end gap-2">
+          <button class="btn btn-secondary" @click="closeEdit">Cerrar</button>
+          <button class="btn btn-primary" @click="saveAllEdits" :disabled="!editNameChanged && !editMembersChanged">Guardar todo</button>
         </div>
       </div>
     </div>
@@ -123,15 +153,22 @@ export default {
       searchGroup: '',
       page: 1,
       pageSize: 10,
-      newGroup: { name: '' },
+      newGroup: { name: '', memberIds: [] },
       selectedGroup: null,
       selectedMemberIds: [],
       memberSearch: '',
-      toast: null
+      toast: null,
+      editModalOpen: false,
+      editTargetGroup: null,
+      editName: '',
+      editMemberIds: []
     }
   },
   computed: {
     ...mapGetters('auth', ['currentUser']),
+    hasName() {
+      return (this.newGroup.name || '').trim().length > 0
+    },
     filteredGroups() {
       const s = this.searchGroup.trim().toLowerCase()
       return (this.groups || []).filter(g => !s || (g.name || '').toLowerCase().includes(s))
@@ -152,6 +189,16 @@ export default {
       const selectedIds = [...this.selectedMemberIds].sort().join(',')
       return originalIds !== selectedIds
     },
+    editNameChanged() {
+      if (!this.editTargetGroup) return false
+      return (this.editName || '').trim() !== (this.editTargetGroup.name || '')
+    },
+    editMembersChanged() {
+      if (!this.editTargetGroup) return false
+      const originalIds = (this.editTargetGroup?.users || []).map(u => u.id).sort().join(',')
+      const selectedIds = [...this.editMemberIds].sort().join(',')
+      return originalIds !== selectedIds
+    },
     toastClass() {
       if (!this.toast) return ''
       return this.toast.type === 'error' ? 'alert-danger' : 'alert-success'
@@ -165,6 +212,18 @@ export default {
     await Promise.all([this.loadGroups(), this.loadUsers()])
   },
   methods: {
+    editGroup(g) {
+      this.editTargetGroup = g
+      this.editName = g.name
+      this.editMemberIds = (g.users || []).map(u => u.id)
+      this.editModalOpen = true
+    },
+    closeEdit() {
+      this.editModalOpen = false
+      this.editTargetGroup = null
+      this.editName = ''
+      this.editMemberIds = []
+    },
     async loadGroups() {
       try {
         this.loading = true
@@ -175,6 +234,41 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    async saveEditName() {
+      if (!this.editTargetGroup) return
+      try {
+        const res = await adminUpdateGroup(this.currentUser.id, this.editTargetGroup.id, { name: (this.editName || '').trim() })
+        Object.assign(this.editTargetGroup, res.data)
+        this.showToast('Nombre actualizado')
+      } catch (error) {
+        this.showToast('Error al actualizar nombre', 'error')
+      }
+    },
+    async saveEditMembers() {
+      if (!this.editTargetGroup) return
+      try {
+        await adminUpdateGroupMembers(this.currentUser.id, this.editTargetGroup.id, this.editMemberIds)
+        await this.loadGroups()
+        const again = this.groups.find(x => x.id === this.editTargetGroup.id)
+        this.editTargetGroup = again || this.editTargetGroup
+        this.showToast('Miembros actualizados')
+      } catch (error) {
+        this.showToast('Error al actualizar miembros', 'error')
+      }
+    },
+    async saveAllEdits() {
+      await Promise.all([
+        this.editNameChanged ? this.saveEditName() : Promise.resolve(),
+        this.editMembersChanged ? this.saveEditMembers() : Promise.resolve()
+      ])
+      this.closeEdit()
+    },
+    async confirmDelete() {
+      if (!this.editTargetGroup) return
+      if (!confirm('¿Eliminar grupo?')) return
+      await this.deleteGroup(this.editTargetGroup)
+      this.closeEdit()
     },
     async loadUsers() {
       try {
@@ -191,9 +285,12 @@ export default {
     },
     async createGroup() {
       try {
-        const res = await adminCreateGroup(this.currentUser.id, this.newGroup)
+        const name = (this.newGroup.name || '').trim()
+        if (!name) { this.showToast('Introduce un nombre de grupo', 'error'); return }
+        const payload = { name, userIds: this.newGroup.memberIds }
+        const res = await adminCreateGroup(this.currentUser.id, payload)
         this.groups.unshift(res.data)
-        this.newGroup = { name: '' }
+        this.newGroup = { name: '', memberIds: [] }
         this.showToast('Grupo creado correctamente')
       } catch (error) {
         this.showToast('Error al crear grupo', 'error')
@@ -251,7 +348,38 @@ export default {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
+  max-height: 240px;
+  overflow: auto;
 }
 .member-item { display: flex; align-items: center; gap: 6px; }
 .gap-2 { gap: 8px; }
+.members-disabled { opacity: 0.65; pointer-events: none; }
+.create-group .form-label { font-weight: 600; color: #495057; }
+.create-group .text-muted { font-size: 12px; }
+
+/* Modal minimalista sin dependencias */
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+.modal-custom {
+  background: #fff;
+  width: min(720px, calc(100% - 32px));
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.modal-header, .modal-footer { padding: 12px 16px; border-bottom: 1px solid #eee; }
+.modal-footer { border-top: 1px solid #eee; border-bottom: 0; }
+.modal-body { padding: 16px; }
+.group-name-text { display: block; text-align: center; font-weight: 400; color: #495057; }
+/* Título más ligero y centrado */
+.card-header { text-align: center; font-weight: 700; color: #495057; }
+.modal-header h5 { flex: 1; text-align: center; font-weight: 700; color: #495057; }
+/* Centrar y aligerar el encabezado de la columna Nombre */
+.table thead th:nth-child(2) { text-align: center; font-weight: 700; color: #495057; }
 </style>

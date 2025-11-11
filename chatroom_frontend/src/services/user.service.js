@@ -6,8 +6,8 @@ export function fetchUsers() {
   return axios.get(API_URL + 'list')
 }
 
-export function fetchGroups() {
-  return axios.get(API_URL + 'groups')
+export function fetchGroups(userId) {
+  return axios.get(API_URL + 'groups', { params: { userId } })
 }
 
 export function fetchProfile() {

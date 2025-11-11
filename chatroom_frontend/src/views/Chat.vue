@@ -62,9 +62,6 @@
             :chatType="chatType"
             :currentUserId="currentUser && currentUser.id">
             <div class="chat-input-area">
-              <div v-if="currentUser" class="me-avatar" :title="currentUser.username || currentUser.name">
-                {{ (currentUser.username || currentUser.name || '?').charAt(0).toUpperCase() }}
-              </div>
               <div class="chat-input-actions">
                 <button class="icon-btn" type="button" title="Emoji" aria-label="Emoji" @click="toggleEmojiPicker">
                   <Icon name="smile" :size="18" />
@@ -307,7 +304,8 @@ export default {
         this.chatType = 'group'
         
         const { fetchMessages } = await import('../services/chat.service.js')
-        const res = await fetchMessages({ groupId: group.id })
+        const meId = this.currentUser && this.currentUser.id
+        const res = await fetchMessages({ groupId: group.id, userId: meId })
         this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
         
         // Suscribirse a mensajes del grupo
@@ -624,7 +622,8 @@ export default {
     const { fetchUsers, fetchGroups } = await import('../services/user.service.js')
     const res = await fetchUsers()
     this.users = res.data
-    const groupRes = await fetchGroups()
+    const me = this.currentUser && this.currentUser.id
+    const groupRes = await fetchGroups(me)
     this.groups = groupRes.data
     
     // 获取初始在线用户列表
@@ -847,7 +846,7 @@ body {
   border: 1px solid var(--border-color);
 }
 
-.me-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+
 
 .chat-input-area input {
   flex: 1;

@@ -56,8 +56,11 @@ public class UserController {
     }
 
     @GetMapping("/groups")
-    public List<Group> listGroups() {
+    public List<Group> listGroups(@RequestParam(required = false) Long userId) {
         try {
+            if (userId != null) {
+                return groupRepository.findByUsers_Id(userId);
+            }
             return groupRepository.findAll();
         } catch (Exception e) {
             e.printStackTrace();

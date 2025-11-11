@@ -36,8 +36,9 @@ export function adminGetGroups(adminUserId) {
   return axios.get(API_URL + 'groups', adminHeaders(adminUserId))
 }
 
-export function adminCreateGroup(adminUserId, group) {
-  return axios.post(API_URL + 'groups', group, adminHeaders(adminUserId))
+export function adminCreateGroup(adminUserId, payload) {
+  // payload: { name: string, userIds: number[] }
+  return axios.post(API_URL + 'groups', payload, adminHeaders(adminUserId))
 }
 
 export function adminUpdateGroup(adminUserId, id, data) {

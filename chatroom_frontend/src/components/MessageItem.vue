@@ -70,8 +70,8 @@ export default {
 .message-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 8px; }
 .message-row.mine { flex-direction: row-reverse; justify-content: flex-start; }
 
-.avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--color-bg-gradient-start), var(--color-bg-gradient-end)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.12); flex: 0 0 28px; }
-.avatar.mine { background: linear-gradient(135deg, var(--color-secondary), #2563eb); }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; color: #1f2937; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.12); flex: 0 0 28px; }
+.avatar.mine { background: linear-gradient(135deg, var(--color-secondary), #2563eb); color: #fff; }
 
 .message-item {
   margin-bottom: 12px;

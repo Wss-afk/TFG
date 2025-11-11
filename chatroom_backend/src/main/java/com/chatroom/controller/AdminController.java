@@ -6,6 +6,7 @@ import com.chatroom.entity.Role;
 import com.chatroom.repository.UserRepository;
 import com.chatroom.repository.GroupRepository;
 import com.chatroom.dto.GroupMembersUpdateRequest;
+import com.chatroom.dto.CreateGroupRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import com.chatroom.service.OnlineUserService;
@@ -217,10 +218,25 @@ public class AdminController {
 
     @PostMapping("/groups")
     public ResponseEntity<?> createGroup(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                         @RequestBody Group group) {
+                                         @RequestBody CreateGroupRequest request) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
         if (forbidden != null) return forbidden;
-        return ResponseEntity.ok(groupRepository.save(group));
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("name required");
+        }
+        Group g = new Group();
+        g.setName(request.getName().trim());
+        // Asignar miembros iniciales si se proporcionan
+        List<Long> userIds = request.getUserIds();
+        if (userIds != null && !userIds.isEmpty()) {
+            Set<User> members = new HashSet<>();
+            for (Long uid : userIds) {
+                userRepository.findById(uid).ifPresent(members::add);
+            }
+            g.setUsers(members);
+        }
+        Group saved = groupRepository.save(g);
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/groups/{id}")

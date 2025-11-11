@@ -56,6 +56,27 @@ public class ChatController {
         if (isSenderDisabled(message)) {
             return;
         }
+        // Bloquear envío si el remitente no pertenece al grupo
+        try {
+            if (message.getGroup() != null && message.getGroup().getId() != null && message.getSender() != null) {
+                Long groupId = message.getGroup().getId();
+                Optional<Group> groupOpt = groupRepository.findById(groupId);
+                if (groupOpt.isPresent()) {
+                    Group g = groupOpt.get();
+                    final Long senderIdFinal = (message.getSender() != null && message.getSender().getId() != null)
+                            ? message.getSender().getId()
+                            : (message.getSender() != null && message.getSender().getUsername() != null)
+                                ? userRepository.findByUsername(message.getSender().getUsername()).map(User::getId).orElse(null)
+                                : null;
+                    boolean isMember = senderIdFinal != null && g.getUsers() != null && g.getUsers().stream().anyMatch(u -> u.getId() != null && u.getId().equals(senderIdFinal));
+                    if (!isMember) {
+                        return; // no guardar ni difundir
+                    }
+                } else {
+                    return; // grupo inexistente
+                }
+            }
+        } catch (Exception ignored) {}
         message.setTimestamp(LocalDateTime.now());
         messageRepository.save(message);
         if (message.getGroup() != null) {
@@ -71,7 +92,16 @@ public class ChatController {
             if (groupId != null) {
                 Optional<Group> groupOpt = groupRepository.findById(groupId);
                 if (groupOpt.isPresent()) {
-                    List<Message> messages = messageRepository.findByGroup(groupOpt.get());
+                    // Validar que el userId pertenece al grupo; si no viene, negar
+                    if (userId == null) {
+                        return ResponseEntity.ok(List.of());
+                    }
+                    Group g = groupOpt.get();
+                    boolean isMember = g.getUsers() != null && g.getUsers().stream().anyMatch(u -> u.getId() != null && u.getId().equals(userId));
+                    if (!isMember) {
+                        return ResponseEntity.ok(List.of());
+                    }
+                    List<Message> messages = messageRepository.findByGroup(g);
                     return ResponseEntity.ok(messages);
                 } else {
                     return ResponseEntity.ok(List.of());

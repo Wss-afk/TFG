@@ -2,7 +2,10 @@
   <div class="admin-container">
     <div class="admin-header d-flex align-items-center justify-content-between">
       <h2 class="m-0">Panel de Super Admin</h2>
-      <span v-if="currentUser" class="badge bg-primary">{{ currentUser.username }}</span>
+      <div class="admin-actions d-flex align-items-center">
+        <span v-if="currentUser" class="badge bg-primary">{{ currentUser.username }}</span>
+        <button type="button" class="admin-logout-btn btn btn-sm ms-2" @click="logout">Cerrar sesión</button>
+      </div>
     </div>
 
     <div v-if="!isSuperAdmin" class="alert alert-warning">No tienes permisos de SUPER_ADMIN.</div>
@@ -31,6 +34,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { disconnectWebSocket } from '../services/websocket.js'
 
 export default {
   name: 'Admin',
@@ -43,6 +47,19 @@ export default {
   methods: {
     isActive(path) {
       return this.$route.path.startsWith(path)
+    },
+    logout() {
+      try {
+        this.$store.dispatch('auth/logout')
+      } catch (e) {
+        console.error('Error al ejecutar logout en store:', e)
+      }
+      try {
+        disconnectWebSocket()
+      } catch (e) {
+        console.error('Error al cerrar WebSocket:', e)
+      }
+      this.$router.push('/login')
     }
   }
 }
@@ -54,7 +71,19 @@ export default {
   margin: 24px auto;
   padding: 16px;
 }
+.admin-actions { gap: 8px; }
 .nav-link {
   cursor: pointer;
+}
+.admin-logout-btn {
+  background: #1f2937; /* gris oscuro para alto contraste */
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.admin-logout-btn:hover {
+  background: #111827;
+  color: #ffffff;
 }
 </style>

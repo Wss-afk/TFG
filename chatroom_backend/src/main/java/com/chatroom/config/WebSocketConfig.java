@@ -1,6 +1,7 @@
 package com.chatroom.config;
 
 import com.chatroom.service.UserService;
+import com.chatroom.repository.GroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -14,10 +15,12 @@ import org.springframework.messaging.simp.config.ChannelRegistration;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Autowired
     private UserService userService;
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new StompUserInterceptor(userService));
+        registration.interceptors(new StompUserInterceptor(userService, groupRepository));
     }
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {

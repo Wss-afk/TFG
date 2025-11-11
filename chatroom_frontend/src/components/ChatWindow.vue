@@ -8,11 +8,7 @@
           <div class="sub">{{ chatUser.email || chatUser.userEmail || 'Conversación privada' }}</div>
         </div>
       </div>
-      <div class="actions">
-        <button class="icon-btn" type="button" title="Más opciones" aria-label="Más opciones">
-          <Icon name="more-vertical" :size="18" />
-        </button>
-      </div>
+      
     </div>
     <div class="chat-topbar" v-else-if="chatGroup && chatType === 'group'">
       <div class="left">
@@ -22,11 +18,7 @@
           <div class="sub">{{ (chatGroup.users && chatGroup.users.length) ? (chatGroup.users.length + ' miembros') : 'Grupo' }}</div>
         </div>
       </div>
-      <div class="actions">
-        <button class="icon-btn" type="button" title="Opciones del grupo" aria-label="Opciones del grupo">
-          <Icon name="more-vertical" :size="18" />
-        </button>
-      </div>
+      
     </div>
     <div v-if="chatGroup && chatType === 'group'" class="group-members-bar">
       <span class="members-title">Miembros:</span>
@@ -67,11 +59,10 @@
 <script>
 import MessageItem from './MessageItem.vue'
 import DateSeparator from './DateSeparator.vue'
-import Icon from './Icon.vue'
 
 export default {
   name: 'ChatWindow',
-  components: { MessageItem, DateSeparator, Icon },
+  components: { MessageItem, DateSeparator },
   props: {
     messages: { type: Array, required: true },
     chatUser: { type: Object, default: null },
@@ -236,7 +227,7 @@ export default {
   box-shadow: var(--shadow-soft);
 }
 .chat-topbar .left { display: flex; align-items: center; gap: 12px; }
-.chat-topbar .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.chat-topbar .avatar { width: 40px; height: 40px; border-radius: 50%; background: #e2e8f0; color: #1f2937; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
 .chat-topbar .avatar.group { background: linear-gradient(135deg, #22c55e, #16a34a); }
 .chat-topbar .meta { display: flex; flex-direction: column; }
 .chat-topbar .name { color: #334155; font-weight: 600; }
