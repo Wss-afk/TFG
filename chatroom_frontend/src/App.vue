@@ -1,5 +1,7 @@
 <template>
-  <router-view/>
+  <transition name="view-fade" mode="out-in">
+    <router-view/>
+  </transition>
 </template>
 
 <script>
@@ -21,4 +23,8 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
 }
+
+/* Transiciones entre vistas */
+.view-fade-enter-active, .view-fade-leave-active { transition: opacity .2s ease, transform .2s ease; }
+.view-fade-enter-from, .view-fade-leave-to { opacity: 0; transform: translateY(6px); }
 </style>

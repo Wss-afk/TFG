@@ -2,13 +2,31 @@
   <div class="chat-window">
     <div class="chat-topbar" v-if="chatUser && chatType === 'user'">
       <div class="left">
-        <div class="avatar" :title="chatUser.username">{{ userInitial }}</div>
+        <div
+          class="avatar"
+          :title="chatUser.username"
+          role="img"
+          :aria-label="'Avatar de ' + ((chatUser && (chatUser.username || chatUser.name)) || 'usuario')"
+        >
+          {{ userInitial }}
+        </div>
         <div class="meta">
           <div class="name">{{ chatUser.username }}</div>
           <div class="sub">{{ chatUser.email || chatUser.userEmail || 'Conversación privada' }}</div>
         </div>
       </div>
-      
+      <div class="actions">
+        <input
+          type="text"
+          class="search"
+          placeholder="Buscar en el chat"
+          aria-label="Buscar"
+          :value="searchQuery"
+          @input="onInputSearch"
+          @keyup.enter="$emit('search', localSearch)"
+        />
+        <button class="icon-btn" title="Opciones" @click="$emit('menu')">⋮</button>
+      </div>
     </div>
     <div class="chat-topbar" v-else-if="chatGroup && chatType === 'group'">
       <div class="left">
@@ -18,7 +36,18 @@
           <div class="sub">{{ (chatGroup.users && chatGroup.users.length) ? (chatGroup.users.length + ' miembros') : 'Grupo' }}</div>
         </div>
       </div>
-      
+      <div class="actions">
+        <input
+          type="text"
+          class="search"
+          placeholder="Buscar en el grupo"
+          aria-label="Buscar"
+          :value="searchQuery"
+          @input="onInputSearch"
+          @keyup.enter="$emit('search', localSearch)"
+        />
+        <button class="icon-btn" title="Opciones" @click="$emit('menu')">⋮</button>
+      </div>
     </div>
     <div v-if="chatGroup && chatType === 'group'" class="group-members-bar">
       <span class="members-title">Miembros:</span>
@@ -27,32 +56,49 @@
         <span v-if="!chatGroup.users || chatGroup.users.length === 0" class="member-chip empty">Sin miembros</span>
       </div>
     </div>
-    <div class="messages" ref="messagesContainer" @scroll="onScroll">
-      <template v-for="(item, idx) in windowedItems" :key="item.key || idx">
-        <DateSeparator v-if="item.type === 'separator'" :label="item.label" />
-        <MessageItem v-else :message="item.message" :currentUserId="currentUserId" />
-      </template>
-
-      <button
-        v-if="!shouldAutoScroll"
-        class="scroll-bottom-btn"
-        @click="jumpToBottom"
-        aria-label="Ir al último"
-      >
-        ↓ Ir al último
-      </button>
-
-      <div
-        v-if="unreadCount > 0 && !shouldAutoScroll"
-        class="new-messages-banner"
-        @click="jumpToBottom"
-        aria-live="polite"
-      >
-        Nuevos mensajes · {{ unreadCount }}
-      </div>
+    <div
+      class="messages"
+      ref="messagesContainer"
+      @scroll="onScroll"
+      role="log"
+      aria-live="polite"
+      aria-relevant="additions"
+      aria-atomic="false"
+      aria-label="Mensajes del chat"
+    >
+      <transition-group name="msg" tag="div" class="messages-list">
+        <component
+          v-for="(item, idx) in windowedItems"
+          :is="item.type === 'separator' ? 'DateSeparator' : 'MessageItem'"
+          :key="item.key || idx"
+          v-bind="item.type === 'separator' 
+            ? { label: item.label } 
+            : { message: item.message, currentUserId: currentUserId, continuation: item.continuation, highlightQuery: searchQuery }"
+        />
+      </transition-group>
     </div>
 
-    <slot></slot>
+    <button
+      v-if="!isAtBottom"
+      class="scroll-bottom-btn"
+      @click="jumpToBottom"
+      aria-label="Ir al último"
+    >
+      ↓ Ir al último
+    </button>
+
+    <div
+      v-if="unreadCount > 0 && !shouldAutoScroll"
+      class="new-messages-banner"
+      @click="jumpToBottom"
+      aria-live="polite"
+    >
+      Nuevos mensajes · {{ unreadCount }}
+    </div>
+
+    <div class="composer-bar">
+      <slot></slot>
+    </div>
   </div>
 </template>
 
@@ -68,7 +114,8 @@ export default {
     chatUser: { type: Object, default: null },
     chatGroup: { type: Object, default: null },
     chatType: { type: String, default: 'user' },
-    currentUserId: { type: [String, Number], required: true }
+    currentUserId: { type: [String, Number], required: true },
+    searchQuery: { type: String, default: '' }
   },
   data() {
     return {
@@ -76,9 +123,11 @@ export default {
       windowSize: 120,
       prependCount: 60,
       shouldAutoScroll: true,
+      isAtBottom: true,
       nearBottomThreshold: 150,
       unreadCount: 0,
-      lastMessagesLength: 0
+      lastMessagesLength: 0,
+      localSearch: ''
     }
   },
   computed: {
@@ -127,6 +176,20 @@ export default {
     }
   },
   methods: {
+    recalcWindowSize() {
+      const el = this.$refs.messagesContainer
+      if (!el) return
+      const vh = el.clientHeight || 600
+      const approxItem = 56
+      const visibleCount = Math.max(60, Math.floor(vh / approxItem) * 2)
+      this.windowSize = visibleCount
+      this.prependCount = Math.max(30, Math.floor(visibleCount / 2))
+    },
+    onInputSearch(e) {
+      const val = e && e.target ? e.target.value : ''
+      this.localSearch = val
+      this.$emit('update:searchQuery', val)
+    },
     onScroll() {
       this.updateAutoScrollState()
       const el = this.$refs.messagesContainer
@@ -162,6 +225,8 @@ export default {
     decorateMessages(list) {
       const result = []
       let lastDayKey = null
+      let prevMsg = null
+      const CONTINUATION_MS = 5 * 60 * 1000 // 5 minutos para agrupar visualmente
       list.forEach((msg, i) => {
         const ts = msg.timestamp ? new Date(msg.timestamp) : new Date()
         const dayKey = `${ts.getFullYear()}-${ts.getMonth()+1}-${ts.getDate()}`
@@ -169,7 +234,16 @@ export default {
           result.push({ type: 'separator', label: this.formatDateLabel(ts), key: `sep-${dayKey}` })
           lastDayKey = dayKey
         }
-        result.push({ type: 'message', message: msg, key: `msg-${msg.id ?? i}` })
+        let continuation = false
+        if (prevMsg) {
+          const prevTs = prevMsg.timestamp ? new Date(prevMsg.timestamp) : ts
+          const prevSender = (prevMsg.sender && (prevMsg.sender.id ?? prevMsg.sender.userId)) ?? prevMsg.senderId ?? prevMsg.sender
+          const currSender = (msg.sender && (msg.sender.id ?? msg.sender.userId)) ?? msg.senderId ?? msg.sender
+          const closeInTime = Math.abs(ts - prevTs) <= CONTINUATION_MS
+          continuation = prevSender == currSender && closeInTime
+        }
+        result.push({ type: 'message', message: msg, continuation, key: `msg-${msg.id ?? i}` })
+        prevMsg = msg
       })
       return result
     },
@@ -187,14 +261,17 @@ export default {
     updateAutoScrollState() {
       const el = this.$refs.messagesContainer
       if (!el) return
-      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-      this.shouldAutoScroll = distanceFromBottom < this.nearBottomThreshold
+      const atBottom = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - 1)
+      this.isAtBottom = atBottom
+      this.shouldAutoScroll = atBottom
     }
   },
   mounted() {
     this.$nextTick(() => {
       this.scrollToBottom()
       this.updateAutoScrollState()
+      this.recalcWindowSize()
+      window.addEventListener('resize', this.recalcWindowSize, { passive: true })
     })
   }
 }
@@ -232,6 +309,15 @@ export default {
 .chat-topbar .meta { display: flex; flex-direction: column; }
 .chat-topbar .name { color: #334155; font-weight: 600; }
 .chat-topbar .sub { color: #64748b; font-size: 12px; }
+.chat-topbar .actions { display: inline-flex; align-items: center; gap: 10px; }
+.chat-topbar .actions .search {
+  height: 32px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color);
+  padding: 0 12px;
+  font-size: 13px;
+  background: var(--color-bg);
+}
 .chat-topbar .actions .icon-btn { width: 32px; height: 32px; border-radius: 50%; border: none; color: #fff; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); cursor: pointer; }
 
 .messages {
@@ -262,6 +348,16 @@ export default {
 .messages::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
 }
+
+.messages-list { display: flex; flex-direction: column; gap: 0; }
+
+/* Transiciones GPU-friendly para aparición / desaparición / reordenado */
+.msg-enter-active,
+.msg-leave-active { transition: transform 180ms ease, opacity 180ms ease; }
+.msg-enter-from,
+.msg-leave-to { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.98); will-change: transform, opacity; }
+.msg-move { transition: transform 180ms ease; will-change: transform; }
+.msg-leave-active { pointer-events: none; }
 .group-members-bar {
   background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%);
   border: 1px solid var(--border-color);
@@ -302,7 +398,7 @@ export default {
 .scroll-bottom-btn {
   position: absolute;
   right: 12px;
-  bottom: 12px;
+  bottom: 180px;
   z-index: 30;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #fff;
@@ -322,7 +418,7 @@ export default {
 .new-messages-banner {
   position: absolute;
   left: 50%;
-  bottom: 64px;
+  bottom: 236px;
   transform: translateX(-50%);
   z-index: 25;
   background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
@@ -338,6 +434,18 @@ export default {
 
 .chat-window {
   position: relative;
+}
+
+/* Composer fijo con blur y sombra */
+.composer-bar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: var(--shadow-2);
 }
 
 </style>

@@ -8,6 +8,9 @@
         class="row"
         :class="{ active: selectedGroup && selectedGroup.id === group.id }"
       >
+        <div class="avatar-wrap">
+          <div class="avatar group-avatar" :title="group.name" role="img" :aria-label="'Grupo ' + group.name">{{ initials(group.name) }}</div>
+        </div>
         <div class="info">
           <div class="name">{{ group.name }}</div>
           <div class="sub">{{ group.users ? group.users.length : 0 }} miembros</div>
@@ -35,6 +38,12 @@ export default {
     selectedGroup: {
       type: Object,
       default: null
+    }
+  },
+  methods: {
+    initials(name) {
+      const parts = (name || '').trim().split(/\s+/).filter(Boolean)
+      return (parts[0] || 'G')[0].toUpperCase()
     }
   }
 }
@@ -70,6 +79,9 @@ export default {
   transition: width .2s ease;
 }
 .row:hover::before, .row.active::before { width: 3px; }
+
+.avatar-wrap { width: 30px; height: 30px; }
+.avatar.group-avatar { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); color: #fff; box-shadow: var(--shadow-1); }
 
 .info { flex: 1; min-width: 0; }
 .name { font-weight: 600; color: #334155; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease; }

@@ -1,32 +1,111 @@
-/* Paleta y theme global para Admin y UI */
+/* Sistema de diseño: tokens de colores, tipografía, espaciados y sombras */
 :root {
-  /* Paleta fresca, moderna y elegante */
+  /* Tipografía */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-size-xs: 0.75rem;  /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-md: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem;  /* 20px */
+  --font-size-2xl: 1.5rem;  /* 24px */
+  --line-compact: 1.25;
+  --line-normal: 1.5;
+  --line-loose: 1.7;
+
+  /* Espaciados (escala de 4px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+
+  /* Sombras */
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-2: 0 4px 10px rgba(15, 23, 42, 0.08);
+  --shadow-3: 0 10px 25px rgba(15, 23, 42, 0.12);
+
+  /* Colores (pensados para contraste WCAG AA) */
+  --color-bg: #ffffff;
+  --color-bg-alt: #f7f9fc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;          /* slate-200 */
+  --color-text: #0f172a;            /* slate-900 */
+  --color-text-muted: #475569;      /* slate-600 (mejor contraste que slate-500) */
+
+  --color-primary: #1d4ed8;         /* blue-700 */
+  --color-primary-hover: #1e40af;   /* blue-800 */
+  --color-primary-contrast: #ffffff;
+
+  --color-secondary: #0ea5e9;       /* sky-500 */
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+
+  /* Gradientes y compatibilidad con lo existente */
   --brand-gradient-start: #4f46e5; /* indigo-600 */
   --brand-gradient-end: #06b6d4;   /* cyan-500 */
-  --surface: #ffffff;
-  --surface-alt: #f7f9fc;          /* fresco y limpio */
-  --text-primary: #0f172a;         /* slate-900 */
-  --text-muted: #64748b;           /* slate-500 */
-  --border-color: #e2e8f0;         /* slate-200 */
-  --radius: 12px;
-  --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-
-  /* Variables usadas por Login.vue y otras vistas */
-  --color-primary: #0ea5e9;        /* sky-500 */
-  --color-secondary: #06b6d4;      /* cyan-500 */
   --color-bg-gradient-start: #f0f9ff; /* sky-50 */
   --color-bg-gradient-end: #ecfeff;   /* cyan-50 */
-  --color-text: #0f172a;           /* slate-900 */
+
+  /* Alias para compatibilidad retro */
+  --surface: var(--color-surface);
+  --surface-alt: var(--color-bg-alt);
+  --text-primary: var(--color-text);
+  --text-muted: var(--color-text-muted);
+  --border-color: var(--color-border);
+  --radius: var(--radius-lg);
+  --shadow: var(--shadow-2);
 }
+
+/* Modo oscuro: usa los mismos tokens con valores adecuados */
+[data-theme="dark"] {
+  --color-bg: #0b1220;
+  --color-bg-alt: #0f172a;
+  --color-surface: #0f172a;
+  --color-border: #1f2a37; /* ~slate-800 */
+  --color-text: #e5e7eb;   /* slate-200 */
+  --color-text-muted: #cbd5e1; /* slate-300 */
+
+  --color-primary: #60a5fa;       /* blue-400 */
+  --color-primary-hover: #3b82f6; /* blue-500 */
+  --color-primary-contrast: #0b1220;
+
+  --shadow-1: 0 1px 2px rgba(2, 8, 23, 0.6);
+  --shadow-2: 0 4px 10px rgba(2, 8, 23, 0.7);
+  --shadow-3: 0 10px 25px rgba(2, 8, 23, 0.75);
+}
+
+/* Base tipográfica y de fondo */
+html { font-size: 100%; }
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: var(--line-normal);
+}
+h1 { font-size: var(--font-size-2xl); line-height: var(--line-compact); font-weight: 700; }
+h2 { font-size: var(--font-size-xl);  line-height: var(--line-compact); font-weight: 700; }
+h3 { font-size: var(--font-size-lg);  line-height: var(--line-normal);  font-weight: 600; }
+h4 { font-size: var(--font-size-md);  line-height: var(--line-normal);  font-weight: 600; }
+p  { font-size: var(--font-size-md);  line-height: var(--line-normal); }
+small { font-size: var(--font-size-sm); line-height: var(--line-normal); }
 
 /* Header del panel admin */
 .admin-header {
   background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
-  color: white;
+  color: #fff;
   border-radius: var(--radius);
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.28);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-2);
 }
 .admin-header .badge {
   background-color: rgba(255,255,255,0.18) !important;
@@ -48,14 +127,14 @@
   color: var(--text-primary);
   font-weight: 600;
   background: linear-gradient(135deg, var(--surface-alt) 0%, #eef2ff 100%);
-  border-radius: 10px 10px 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 /* Cards y tablas */
 .card {
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-2);
 }
 .card-header {
   background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
@@ -70,17 +149,18 @@
 
 /* Controles de formulario */
 .form-control, .form-select {
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border-color: var(--border-color);
 }
 .form-control:focus, .form-select:focus {
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
-  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.25); /* primary-700 */
+  border-color: var(--color-primary);
 }
 
 /* Botones */
 .btn-primary {
-  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  color: var(--color-primary-contrast);
   border: none;
 }
 .btn-success {
@@ -97,5 +177,8 @@
 }
 
 /* Utilidades */
-.gap-2 { gap: 8px; }
-.gap-3 { gap: 12px; }
+.gap-2 { gap: var(--space-2); }
+.gap-3 { gap: var(--space-3); }
+
+/* Utilidades adicionales */
+.text-muted { color: var(--color-text-muted); }

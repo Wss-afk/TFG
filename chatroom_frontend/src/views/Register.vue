@@ -6,9 +6,30 @@
         <p class="register-subtitle">Regístrate para comenzar a chatear</p>
       </div>
       <form @submit.prevent="register" class="register-form">
-        <input v-model="username" placeholder="Usuario" required />
-        <input v-model="password" type="password" placeholder="Contraseña" required />
-        <input v-model="confirmPassword" type="password" placeholder="Confirmar contraseña" required />
+        <input
+          v-model="username"
+          placeholder="Usuario"
+          aria-label="Usuario"
+          autocomplete="username"
+          required
+          autofocus
+        />
+        <input
+          v-model="password"
+          type="password"
+          placeholder="Contraseña"
+          aria-label="Contraseña"
+          autocomplete="new-password"
+          required
+        />
+        <input
+          v-model="confirmPassword"
+          type="password"
+          placeholder="Confirmar contraseña"
+          aria-label="Confirmar contraseña"
+          autocomplete="new-password"
+          required
+        />
         <button type="submit">Registrarse</button>
       </form>
       <p class="register-footer">¿Ya tienes cuenta? <router-link to="/login">Inicia sesión</router-link></p>
@@ -87,9 +108,14 @@ export default {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .register-form input:focus {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(32, 160, 255, 0.2);
+}
+.register-form button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 .register-form button {
   width: 100%;

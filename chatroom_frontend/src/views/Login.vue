@@ -6,8 +6,22 @@
         <p class="login-subtitle">Accede para continuar al chat</p>
       </div>
       <form @submit.prevent="login" class="login-form">
-        <input v-model="username" placeholder="Usuario" required />
-        <input v-model="password" type="password" placeholder="Contraseña" required />
+        <input
+          v-model="username"
+          placeholder="Usuario"
+          aria-label="Usuario"
+          autocomplete="username"
+          required
+          autofocus
+        />
+        <input
+          v-model="password"
+          type="password"
+          placeholder="Contraseña"
+          aria-label="Contraseña"
+          autocomplete="current-password"
+          required
+        />
         <button type="submit">Entrar</button>
       </form>
       <p class="login-footer">¿No tienes cuenta? <router-link to="/register">Regístrate</router-link></p>
@@ -98,9 +112,14 @@ export default {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .login-form input:focus {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(32, 160, 255, 0.2);
+}
+.login-form button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 .login-form button {
   width: 100%;

@@ -2,8 +2,22 @@
   <div class="profile-container">
     <h2>Perfil</h2>
     <form @submit.prevent="save">
-      <input v-model="username" placeholder="Usuario" />
-      <input v-model="email" placeholder="Correo electrónico" />
+      <input
+        v-model="username"
+        placeholder="Usuario"
+        aria-label="Usuario"
+        autocomplete="username"
+        required
+        autofocus
+      />
+      <input
+        v-model="email"
+        type="email"
+        placeholder="Correo electrónico"
+        aria-label="Correo electrónico"
+        autocomplete="email"
+        required
+      />
       <button type="submit">Guardar</button>
     </form>
   </div>
@@ -45,6 +59,12 @@ input {
   border-radius: 4px;
   border: 1px solid #ccc;
 }
+input:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(32, 160, 255, 0.2);
+}
 button {
   width: 100%;
   padding: 8px;
@@ -53,5 +73,9 @@ button {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+button:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

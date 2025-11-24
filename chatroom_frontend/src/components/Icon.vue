@@ -1,5 +1,5 @@
 <template>
-  <span :class="['icon', `icon-${name}`]" :style="styleVars" aria-hidden="true">
+  <span :class="['icon', `icon-${name}`]" :style="styleVars" :aria-hidden="!label">
     <svg v-if="name === 'search'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="stroke" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="7"></circle>
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -34,6 +34,7 @@
     <svg v-else-if="name === 'chevron-right'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="stroke" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="9 18 15 12 9 6" />
     </svg>
+    <span v-if="label" class="sr-only">{{ label }}</span>
   </span>
 </template>
 
@@ -44,7 +45,8 @@ export default {
     name: { type: String, required: true },
     size: { type: [Number, String], default: 20 },
     stroke: { type: [Number, String], default: 2 },
-    color: { type: String, default: 'currentColor' }
+    color: { type: String, default: 'currentColor' },
+    label: { type: String, default: '' }
   },
   computed: {
     styleVars() {
@@ -57,4 +59,15 @@ export default {
 <style scoped>
 .icon { display: inline-flex; align-items: center; justify-content: center; }
 svg { display: block; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 </style>

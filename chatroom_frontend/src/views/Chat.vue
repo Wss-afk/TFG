@@ -2,26 +2,25 @@
   <div class="chat-page">
     <AppDock />
     <div class="content-area">
+      <div v-if="toast" class="toast" :class="toastClass()">{{ toast.message }}</div>
       <header class="topbar">
         <div class="left">
           <h1 class="topbar-title">Messages</h1>
-          <span class="topbar-meta">6 Running Projects</span>
-        </div>
-        <div class="center">
-          <div class="search">
-            <input type="text" placeholder="Search" v-model="searchQuery" />
-            <button type="button" class="search-btn" aria-label="Buscar">
-              <Icon name="search" :size="18" />
-            </button>
-          </div>
         </div>
         <div class="right">
-          <button type="button" class="add-btn" title="New" aria-label="Nuevo">
-            <Icon name="plus" :size="18" />
-          </button>
           <div class="profile" v-if="currentUser">
             <div v-if="!currentUser.avatarUrl" class="profile-avatar placeholder">{{ userInitials }}</div>
-            <img v-else :src="currentUser.avatarUrl" class="profile-avatar" />
+            <img
+              v-else
+              :src="currentUser.avatarUrl"
+              :srcset="currentUser.avatarUrl + ' 1x, ' + currentUser.avatarUrl + ' 2x'"
+              class="profile-avatar"
+              :class="avatarLoaded ? '' : 'image-loading'"
+              loading="lazy"
+              decoding="async"
+              @load="onAvatarLoad"
+              alt="Avatar"
+            />
             <div class="profile-info">
               <div class="profile-name">{{ currentUser.username }}</div>
               <div class="profile-sub">My settings</div>
@@ -54,33 +53,51 @@
           </div>
         </div>
         <div class="main-chat">
-          <ChatWindow 
-            ref="chatWindow"
-            :messages="messages" 
-            :chatUser="selectedUser" 
-            :chatGroup="selectedGroup"
-            :chatType="chatType"
-            :currentUserId="currentUser && currentUser.id">
-            <div class="chat-input-area">
-              <div class="chat-input-actions">
-                <button class="icon-btn" type="button" title="Emoji" aria-label="Emoji" @click="toggleEmojiPicker">
-                  <Icon name="smile" :size="18" />
+          <template v-if="selectedUser || selectedGroup">
+            <ChatWindow 
+              ref="chatWindow"
+              :messages="filteredMessages" 
+              :chatUser="selectedUser" 
+              :chatGroup="selectedGroup"
+              :chatType="chatType"
+              :currentUserId="currentUser && currentUser.id"
+              :searchQuery="searchQuery"
+              @update:searchQuery="searchQuery = $event"
+              @search="searchQuery = $event">
+              <div class="chat-input-area">
+                <div class="chat-input-actions">
+                  <button class="icon-btn" type="button" title="Emoji" aria-label="Emoji" @click="toggleEmojiPicker">
+                    <Icon name="smile" :size="18" />
+                  </button>
+                  <button class="icon-btn" type="button" title="Adjuntar" aria-label="Adjuntar" @click="triggerAttach">
+                    <Icon name="paperclip" :size="18" />
+                  </button>
+                  <input ref="fileInput" type="file" style="display:none" @change="handleFileSelected" />
+                </div>
+                <input v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
+                <button @click="send" class="send-btn" aria-label="Enviar">
+                  <Icon name="send" :size="18" />
+                  <span class="send-label">Enviar</span>
                 </button>
-                <button class="icon-btn" type="button" title="Adjuntar" aria-label="Adjuntar" @click="triggerAttach">
-                  <Icon name="paperclip" :size="18" />
-                </button>
-                <input ref="fileInput" type="file" style="display:none" @change="handleFileSelected" />
               </div>
-              <input v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
-              <button @click="send" class="send-btn" aria-label="Enviar">
-                <Icon name="send" :size="18" />
-                <span class="send-label">Enviar</span>
-              </button>
+              <div v-if="showEmojiPicker" class="emoji-picker">
+                <button v-for="e in emojis" :key="e" class="emoji-btn" @click="insertEmoji(e)" type="button">{{ e }}</button>
+              </div>
+            </ChatWindow>
+          </template>
+          <template v-else>
+            <div class="empty-chat" aria-live="polite">
+              <div class="empty-card" role="region" aria-label="Selecciona un chat">
+                <div class="empty-hero" aria-hidden="true">
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 5.5A3.5 3.5 0 0 1 7.5 2h9A3.5 3.5 0 0 1 20 5.5v7A3.5 3.5 0 0 1 16.5 16H13l-3.5 3.5c-.6.6-1.5.18-1.5-.7V16H7.5A3.5 3.5 0 0 1 4 12.5v-7Z" fill="currentColor"/>
+                  </svg>
+                </div>
+                <div class="empty-title">Selecciona un chat o un grupo</div>
+                <div class="empty-sub">Usa el panel de la izquierda para comenzar a conversar.</div>
+              </div>
             </div>
-            <div v-if="showEmojiPicker" class="emoji-picker">
-              <button v-for="e in emojis" :key="e" class="emoji-btn" @click="insertEmoji(e)" type="button">{{ e }}</button>
-            </div>
-          </ChatWindow>
+          </template>
         </div>
       </div>
     </div>
@@ -124,10 +141,25 @@ export default {
         case 'groups': return 'Groups';
         default: return 'All chats';
       }
+    },
+    filteredMessages() {
+      const list = Array.isArray(this.messages) ? this.messages : []
+      const q = (this.searchQuery || '').trim().toLowerCase()
+      if (!q) return list
+      const includesQ = (text) => String(text || '').toLowerCase().includes(q)
+      return list.filter(m => {
+        const contentMatch = includesQ(m.content)
+        const sender = m && m.sender
+        const senderName = typeof sender === 'object' ? (sender.username || sender.name) : sender
+        const authorMatch = includesQ(senderName)
+        return contentMatch || authorMatch
+      })
     }
   },
   data() {
     return {
+      toast: null,
+      toastTimer: null,
       searchQuery: '',
       users: [],
       groups: [],
@@ -147,10 +179,24 @@ export default {
       showEmojiPicker: false,
       emojis: ['😀','😁','😂','😊','😍','😎','😘','😅','😉','🤩','🥳','😇','🙌','👍','👏','🔥','✨','❤️','💯','🎉'],
       activeTab: 'all',
-      lastMessageMap: {}
+      lastMessageMap: {},
+      avatarLoaded: false
     }
   },
   methods: {
+    showToast(message, type = 'success') {
+      clearTimeout(this.toastTimer)
+      this.toast = { message, type }
+      this.toastTimer = setTimeout(() => { this.toast = null }, 2600)
+    },
+    toastClass() {
+      const t = (this.toast && this.toast.type) || 'success'
+      return {
+        'toast-success': t === 'success',
+        'toast-error': t === 'error',
+        'toast-info': t === 'info'
+      }
+    },
     normalizeOnlineUsers(list) {
       if (!Array.isArray(list)) return []
       return list.map(u => {
@@ -322,7 +368,18 @@ export default {
     async send() {
       if (this.inputMsg.trim()) {
         const content = this.inputMsg
-        
+        // Comprobar estado de conexión antes de enviar
+        try {
+          const { isConnected } = await import('../services/websocket.js')
+          if (!isConnected || !isConnected()) {
+            this.showToast('Conexión perdida. No se pudo enviar', 'error')
+            return
+          }
+        } catch (e) {
+          // Si falla la detección, continuar pero avisar
+          this.showToast('Enviando…', 'info')
+        }
+
         if (this.chatType === 'user' && this.selectedUser) {
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username },
@@ -333,6 +390,7 @@ export default {
           }
           // Enviar via STOMP; la UI se actualiza solo cuando el servidor hace eco
           sendMessage('/app/chat/single', message)
+          this.showToast('Mensaje enviado', 'success')
           // Actualizar hint de último mensaje en la lista
           this.lastMessageMap[this.selectedUser.id] = { content, timestamp: message.timestamp }
         } else if (this.chatType === 'group' && this.selectedGroup) {
@@ -345,6 +403,7 @@ export default {
           }
           // Enviar via STOMP; no hacer inserción optimista
           sendMessage('/app/chat/group', message)
+          this.showToast('Mensaje enviado al grupo', 'success')
         }
         this.inputMsg = ''
       }
@@ -386,6 +445,7 @@ export default {
         evt.target.value = ''
       } catch (err) {
         console.error('Error al enviar adjunto:', err)
+        this.showToast('Error al enviar adjunto', 'error')
       }
     },
     subscribeToGroupChannel(groupId) {
@@ -684,7 +744,7 @@ body {
 
 .topbar {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr auto; /* dos columnas: título y perfil */
   align-items: center;
   gap: 16px;
   padding: 12px 20px;
@@ -695,7 +755,7 @@ body {
 .topbar-title { font-size: 22px; font-weight: 800; color: var(--text-primary); }
 .topbar-meta { color: var(--text-muted); font-weight: 600; margin-left: 12px; }
 .left { display: flex; align-items: center; gap: 12px; }
-.center { display: flex; justify-content: center; }
+.center { display: none; }
 .right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 
 .search { display: flex; gap: 8px; background: var(--surface-alt); padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8); }
@@ -706,6 +766,11 @@ body {
 .logout-btn { border: none; background: var(--color-bg-gradient-start); color: var(--brand-gradient-start); border-radius: 10px; padding: 8px 12px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow); }
 .profile { display: flex; align-items: center; gap: 10px; padding-left: 8px; border-left: 1px solid var(--border-color); }
 .profile-avatar { width: 28px; height: 28px; border-radius: 50%; }
+.profile,
+.profile-avatar,
+.profile-info,
+.profile-name,
+.profile-sub { cursor: default; }
 .profile-avatar.placeholder {
   background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%);
   color: #fff;
@@ -887,11 +952,13 @@ body {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
+  left: 0;
   width: 100%;
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+  will-change: transform;
 }
 
 .chat-input-area button:hover {
@@ -902,7 +969,7 @@ body {
 }
 
 .chat-input-area button:hover::before {
-  left: 100%;
+  transform: translateX(100%);
 }
 
 .chat-input-area button:active {
@@ -910,6 +977,92 @@ body {
   box-shadow: 
     0 2px 8px rgba(102, 126, 234, 0.3),
     0 1px 2px rgba(0,0,0,0.1);
+}
+
+.empty-chat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #64748b;
+  padding: 12px;
+}
+.empty-card {
+  position: relative;
+  width: 480px;
+  max-width: 90%;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  padding: 28px 24px 26px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  overflow: hidden;
+}
+
+.empty-card::before,
+.empty-card::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(18px);
+  opacity: 0.35;
+}
+
+.empty-card::before {
+  width: 160px;
+  height: 160px;
+  left: -40px;
+  top: -40px;
+  background: radial-gradient(closest-side, var(--brand-gradient-start), transparent);
+}
+
+.empty-card::after {
+  width: 220px;
+  height: 220px;
+  right: -60px;
+  bottom: -60px;
+  background: radial-gradient(closest-side, var(--brand-gradient-end), transparent);
+}
+
+.empty-hero {
+  width: 84px;
+  height: 84px;
+  margin: 8px auto 14px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--brand-gradient-start);
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(56,189,248,0.08));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 8px 24px rgba(99,102,241,0.15);
+  animation: float 3.6s ease-in-out infinite;
+  position: relative;
+}
+
+.empty-hero::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 28px;
+  border: 2px solid rgba(99,102,241,0.25);
+}
+
+.empty-title {
+  font-weight: 800;
+  color: #1f2937;
+  font-size: 18px;
+  letter-spacing: 0.2px;
+}
+
+.empty-sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 .chat-input-actions {
@@ -932,6 +1085,8 @@ body {
 
 .icon-btn:hover { background: #e2e8f0; transform: translateY(-1px); }
 .icon-btn:active { transform: translateY(0); }
+
+.image-loading { filter: blur(6px); transform: scale(1.02); }
 
 /* 响应式设计 - 平板设备 */
 @media (max-width: 1024px) {
@@ -1060,3 +1215,19 @@ body {
 }
 .emoji-btn:hover { background: #e2e8f0; }
 </style>
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  font-weight: 700;
+}
+.toast-success { background: #ecfdf5; color: #065f46; border: 1px solid #10b981; }
+.toast-error { background: #fef2f2; color: #7f1d1d; border: 1px solid #ef4444; }
+.toast-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #3b82f6; }
+    onAvatarLoad() {
+      this.avatarLoaded = true
+    },

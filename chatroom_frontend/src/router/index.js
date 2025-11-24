@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
 import store from '../store'
 
 const routes = [
@@ -68,7 +70,10 @@ const router = createRouter({
   routes
 })
 
+NProgress.configure({ showSpinner: false })
+
 router.beforeEach((to, from, next) => {
+  NProgress.start()
   const currentUser = store.getters['auth/currentUser']
   const hasUser = !!currentUser
   const hasToken = store.getters['auth/isAuthenticated']
@@ -106,6 +111,10 @@ router.beforeEach((to, from, next) => {
   }
 
   next()
+})
+
+router.afterEach(() => {
+  NProgress.done()
 })
 
 export default router

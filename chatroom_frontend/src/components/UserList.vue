@@ -9,9 +9,9 @@
         :class="{ active: selectedUser && selectedUser.id === user.id, online: isUserOnline(user), offline: !isUserOnline(user) }"
       >
         <div class="avatar-wrap">
-          <img v-if="user.avatarUrl" :src="user.avatarUrl" class="avatar" />
-          <div v-else class="avatar placeholder">{{ initials(user.username) }}</div>
-          <span class="status-dot" :class="isUserOnline(user) ? 'online' : 'offline'" />
+          <img v-if="user.avatarUrl" :src="user.avatarUrl" class="avatar" :alt="'Avatar de ' + user.username" />
+          <div v-else class="avatar placeholder" role="img" :aria-label="'Avatar de ' + user.username">{{ initials(user.username) }}</div>
+          <span class="status-dot" :class="isUserOnline(user) ? 'online' : 'offline'" :aria-label="isUserOnline(user) ? 'En línea' : 'Desconectado'" />
         </div>
         <div class="info">
           <div class="top">
