@@ -65,7 +65,7 @@
               @update:searchQuery="searchQuery = $event"
               @search="searchQuery = $event">
               <div class="chat-input-area">
-                <div class="chat-input-actions">
+                <div class="chat-input-actions gap8-2">
                   <button class="icon-btn" type="button" title="Emoji" aria-label="Emoji" @click="toggleEmojiPicker">
                     <Icon name="smile" :size="18" />
                   </button>
@@ -1068,7 +1068,6 @@ body {
 .chat-input-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
 }
 
 .icon-btn {

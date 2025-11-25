@@ -34,6 +34,10 @@
     <svg v-else-if="name === 'chevron-right'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="stroke" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="9 18 15 12 9 6" />
     </svg>
+    <svg v-else-if="name === 'reply'" :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="stroke" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 10 4 15 9 20" />
+      <path d="M20 12a8 8 0 0 0 -8 -8h-3" />
+    </svg>
     <span v-if="label" class="sr-only">{{ label }}</span>
   </span>
 </template>

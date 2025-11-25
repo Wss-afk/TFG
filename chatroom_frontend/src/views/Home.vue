@@ -3,7 +3,7 @@
     <AppDock />
     <div class="home-content">
       <div class="welcome-bar" role="banner" aria-label="Bienvenida">
-        <div class="welcome-left">
+        <div class="welcome-left gap8-1">
           <span class="welcome-title">Bienvenido</span>
           <span class="welcome-user">{{ currentUser?.username || 'Usuario' }}</span>
         </div>
@@ -11,28 +11,28 @@
           <Icon name="smile" :size="20" />
         </div>
       </div>
-      <div class="home-grid">
+      <div class="home-grid gap8-2">
         <!-- Columna izquierda: Calendario + Today Task -->
         <section class="calendar-card">
           <header class="card-header">
             <div class="month-title">
               {{ monthLabel }}
             </div>
-            <div class="header-actions">
+            <div class="header-actions gap8-1">
               <button class="nav-btn" aria-label="Mes anterior" @click="prevMonth"><Icon name="chevron-left" :size="18" /></button>
               <button class="nav-btn" aria-label="Mes siguiente" @click="nextMonth"><Icon name="chevron-right" :size="18" /></button>
               <button class="dots-btn" aria-label="Más opciones"><Icon name="dots" :size="18" /></button>
             </div>
           </header>
           <div class="calendar">
-            <div class="weekdays">
+            <div class="weekdays gap8-1">
               <span v-for="d in weekdays" :key="d">{{ d }}</span>
             </div>
-            <div class="days">
+            <div class="days gap8-1">
               <span v-for="(d, idx) in leadingBlanks" :key="'b'+idx" class="blank"></span>
               <button v-for="day in daysInMonth" :key="day" :class="['day', isToday(day) && 'today']">
                 <span class="num">{{ day }}</span>
-                <div class="dots">
+                <div class="dots gap8-1">
                   <span
                     v-for="(ev, i) in eventsForDay(day).slice(0,3)"
                     :key="i"
@@ -51,7 +51,7 @@
             <div class="card-title">Today Task <span class="muted">({{ todayEvents.length }})</span></div>
             <button class="add-btn" aria-label="Agregar"><Icon name="plus" :size="18" /></button>
           </header>
-          <ul class="tasks-list">
+          <ul class="tasks-list gap8-1">
             <li v-for="ev in todayEvents" :key="ev.id || ev.title" class="task-item">
               <label><input type="checkbox"> {{ ev.title }}</label>
               <span class="time">{{ ev.time || 'Todo el día' }}</span>
@@ -75,10 +75,10 @@
               <div class="notice-date">—</div>
             </div>
           </div>
-          <ul class="notifications-list" v-else>
+          <ul class="notifications-list gap8-2" v-else>
             <li class="notification-item" v-for="n in notifications" :key="n.key">
               <div class="notification-main">
-                <div class="notification-title">
+                <div class="notification-title gap8-1">
                   <span class="badge" :class="n.type">{{ n.type === 'group' ? 'Grupo' : 'Mensaje' }}</span>
                   <span class="strong">{{ n.title }}</span>
                 </div>
@@ -95,14 +95,14 @@
         <section class="teamchat-card">
           <header class="card-header">
             <div class="card-title">Team Chat</div>
-            <div class="right-actions">
+            <div class="right-actions gap8-2">
               <div class="avatars">
                 <span class="avatar" v-for="i in 5" :key="i">{{ ['E','A','S','D','M'][i-1] }}</span>
               </div>
               <button class="invite-btn"><Icon name="plus" :size="18" /> Invite People</button>
             </div>
           </header>
-          <div class="mini-chat">
+          <div class="mini-chat gap8-2">
             <div class="bubble">
               <div class="sender">@members</div>
               <div class="text">Hey, how's the project going?</div>
@@ -113,7 +113,7 @@
               <div class="meta">7 minutes ago</div>
             </div>
           </div>
-          <div class="mini-input">
+          <div class="mini-input gap8-2">
             <input type="text" placeholder="Type a message..." />
             <button class="send-mini">Send</button>
           </div>
@@ -336,16 +336,16 @@ export default {
 .home-page { display: flex; min-height: 100vh; background: var(--surface-alt); }
 .home-content { flex: 1; padding: 18px; }
 .welcome-bar { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); color: #fff; border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow); margin-bottom: 16px; }
-.welcome-left { display: flex; align-items: baseline; gap: 8px; }
+.welcome-left { display: flex; align-items: baseline; }
 .welcome-title { font-weight: 700; opacity: .95; }
 .welcome-user { font-weight: 800; }
 .welcome-right { opacity: .95; }
-.home-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
+.home-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; }
 
 .card-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; }
 .month-title, .card-title { font-weight: 800; color: var(--text-primary); }
 .muted { color: var(--text-muted); font-weight: 600; }
-.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-actions { display: flex; align-items: center; }
 .nav-btn, .dots-btn, .add-btn { border: none; background: #f1f5f9; cursor: pointer; color: var(--text-muted); border-radius: 10px; padding: 6px; }
 .nav-btn:hover, .dots-btn:hover, .add-btn:hover { background: #e5e7eb; }
 .view-all { color: var(--color-secondary); text-decoration: none; font-weight: 600; }
@@ -360,17 +360,17 @@ export default {
 .calendar { padding: 10px 14px 16px; }
 .weekdays { display: grid; grid-template-columns: repeat(7,1fr); color: var(--text-muted); font-weight: 700; font-size: 11px; margin-bottom: 6px; }
 .weekdays span { text-align: center; }
-.days { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
+.days { display: grid; grid-template-columns: repeat(7,1fr); }
 .day { border: 1px solid var(--border-color); background: #f9fafb; border-radius: 10px; padding: 8px 0; text-align: center; color: var(--text-primary); font-weight: 700; cursor: pointer; position: relative; }
 .day.today { background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%); color: #fff; border: none; }
 .blank { height: 32px; }
 
 .num { font-weight: 700; }
-.dots { position: absolute; bottom: 6px; left: 8px; display: flex; gap: 6px; }
+.dots { position: absolute; bottom: 6px; left: 8px; display: flex; }
 .dot { width: 8px; height: 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
 .more { font-size: 12px; color: var(--text-muted); }
 
-.tasks-list { list-style: none; margin: 0; padding: 6px 12px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+.tasks-list { list-style: none; margin: 0; padding: 6px 12px 12px; display: flex; flex-direction: column; max-height: 260px; overflow-y: auto; }
 .task-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 8px 10px; }
 .task-item label { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-primary); }
 .task-item .time { color: var(--text-muted); font-weight: 600; }
@@ -379,18 +379,18 @@ export default {
 .notice-title { font-weight: 800; margin-bottom: 6px; }
 .notice-date { opacity: .9; font-weight: 600; }
 .assign-btn { margin-top: 10px; background: #fff; color: var(--brand-gradient-start); border: none; border-radius: 10px; padding: 6px 10px; font-weight: 700; cursor: pointer; }
-.notifications-list { list-style: none; margin: 8px 12px 12px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.notifications-list { list-style: none; margin: 8px 12px 12px; padding: 0; display: flex; flex-direction: column; }
 .notification-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 12px; }
 .notification-main { display: flex; flex-direction: column; gap: 4px; }
-.notification-title { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--text-primary); }
+.notification-title { display: flex; align-items: center; font-weight: 800; color: var(--text-primary); }
 .notification-text { color: var(--text-primary); font-weight: 600; }
 .notification-meta { color: var(--text-muted); font-weight: 600; font-size: 12px; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 800; }
 .badge.user { background: #dbeafe; color: #1e40af; }
 .badge.group { background: #fee2e2; color: #991b1b; }
 
-.teamchat-card .mini-chat { padding: 6px 12px; display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; }
-.right-actions { display: flex; align-items: center; gap: 10px; }
+.teamchat-card .mini-chat { padding: 6px 12px; display: flex; flex-direction: column; max-height: 240px; overflow-y: auto; }
+.right-actions { display: flex; align-items: center; }
 .avatars { display: flex; align-items: center; }
 .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--color-bg-gradient-end); color: var(--brand-gradient-start); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; margin-left: -6px; box-shadow: 0 0 0 2px #fff; }
 .bubble { background: var(--color-bg-gradient-start); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px 10px; max-width: 90%; }
@@ -399,7 +399,7 @@ export default {
 .bubble .meta { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
 .bubble.mine { background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%); color: #fff; border: none; align-self: flex-end; }
 
-.mini-input { display: flex; gap: 10px; padding: 12px; border-top: 1px solid var(--border-color); }
+.mini-input { display: flex; padding: 12px; border-top: 1px solid var(--border-color); }
 .mini-input input { flex: 1; border: 1px solid var(--border-color); border-radius: 12px; padding: 8px 10px; }
 .mini-input .send-mini { border: none; background: linear-gradient(135deg, var(--brand-gradient-start) 0%, var(--brand-gradient-end) 100%); color: #fff; border-radius: 12px; padding: 8px 12px; font-weight: 700; cursor: pointer; }
 

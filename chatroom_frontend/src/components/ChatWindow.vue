@@ -261,7 +261,8 @@ export default {
     updateAutoScrollState() {
       const el = this.$refs.messagesContainer
       if (!el) return
-      const atBottom = (el.scrollTop + el.clientHeight) >= (el.scrollHeight - 1)
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+      const atBottom = distance <= 2
       this.isAtBottom = atBottom
       this.shouldAutoScroll = atBottom
     }

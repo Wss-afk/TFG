@@ -6,7 +6,7 @@
         <div class="left">
           <h1 class="title">{{ monthLabel }}</h1>
         </div>
-        <div class="controls">
+        <div class="controls gap8-2">
           <button class="nav-btn" @click="prevMonth" aria-label="Mes anterior">
             <Icon name="chevron-left" :size="18" />
           </button>
@@ -17,12 +17,12 @@
         </div>
       </header>
 
-      <section class="calendar-wrap">
+      <section class="calendar-wrap gap8-2">
         <div class="calendar">
-          <div class="weekdays">
+          <div class="weekdays gap8-1">
             <div v-for="d in weekdays" :key="d" class="wd">{{ d }}</div>
           </div>
-          <div class="days">
+          <div class="days gap8-1">
             <div v-for="n in startOffset" :key="'empty-'+n" class="day empty"></div>
             <div
               v-for="day in daysInMonth"
@@ -31,7 +31,7 @@
               @click="selectDay(day)"
             >
               <div class="num">{{ day }}</div>
-              <div class="dots">
+              <div class="dots gap8-1">
                 <span
                   v-for="(ev, i) in eventsForDay(day).slice(0,3)"
                   :key="i"
@@ -61,7 +61,7 @@
                 <label>Descripción</label>
                 <textarea v-model="newEvent.description" placeholder="Descripción (opcional)"></textarea>
               </div>
-              <div class="form-grid">
+              <div class="form-grid gap8-2">
                 <div>
                   <label>Hora</label>
                   <div class="hour-selects">
@@ -83,8 +83,8 @@
               </div>
           <div class="form-row">
             <label>Responsables</label>
-            <div class="checkbox-list">
-              <label v-for="u in users" :key="u.id" class="checkbox-item">
+            <div class="checkbox-list gap8-1">
+              <label v-for="u in users" :key="u.id" class="checkbox-item gap8-2">
                 <input type="checkbox" :value="u.id" v-model="newEvent.assignedToIds" />
                 <span class="checkbox-label">{{ u.username }}</span>
               </label>
@@ -99,7 +99,7 @@
               </div>
               <div v-if="createError" class="form-error">{{ createError }}</div>
             </div>
-            <ul class="event-list">
+            <ul class="event-list gap8-2">
               <template v-if="loadingEvents">
                 <li v-for="n in 5" :key="'sk-'+n" class="event-item skeleton">
                   <div class="event-left">
@@ -112,7 +112,7 @@
                 </li>
               </template>
               <template v-else>
-                <li v-for="ev in monthEvents" :key="ev.id" class="event-item" @click="openEventDetails(ev)" style="cursor: pointer">
+                <li v-for="ev in monthEvents" :key="ev.id" class="event-item gap8-2" @click="openEventDetails(ev)" style="cursor: pointer">
                   <div class="event-left">
                     <span class="badge" :style="{ background: ev.color }"></span>
                   </div>
@@ -364,30 +364,30 @@ export default {
 
 .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
 .title { font-size: 24px; font-weight: 800; color: #111827; }
-.controls { display: flex; align-items: center; gap: 8px; }
+.controls { display: flex; align-items: center; }
 .nav-btn { width: 32px; height: 32px; border-radius: 10px; border: 1px solid rgba(226,232,240,.9); background: #f1f5f9; color: #334155; cursor: pointer; }
 .nav-btn:hover { background: #e2e8f0; }
 .primary { padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(226,232,240,.9); background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff; font-weight: 700; cursor: pointer; }
 
-.calendar-wrap { display: grid; grid-template-columns: 1fr 320px; gap: 18px; }
+.calendar-wrap { display: grid; grid-template-columns: 1fr 320px; }
 .calendar { background: #ffffff; border: 1px solid rgba(226,232,240,.9); border-radius: 16px; padding: 18px; }
-.weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 12px; }
+.weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 12px; }
 .wd { padding: 8px 10px; border-radius: 12px; text-align: center; background: #f8fafc; color: #475569; font-weight: 600; }
-.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); }
 .day { background: #f8fafc; border: 1px solid rgba(226,232,240,.9); border-radius: 14px; padding: 10px; min-height: 74px; position: relative; transition: transform .15s ease; }
 .day:hover { transform: translateY(-2px); }
 .day.today { border-color: #8b5cf6; box-shadow: 0 0 0 2px rgba(139,92,246,.25) inset; }
 .day.selected { background: #eef2ff; }
 .day.empty { visibility: hidden; }
 .num { font-weight: 700; color: #111827; }
-.dots { position: absolute; bottom: 8px; left: 10px; display: flex; gap: 6px; }
+.dots { position: absolute; bottom: 8px; left: 10px; display: flex; }
 .dot { width: 8px; height: 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
 .more { font-size: 12px; color: #64748b; }
 
 .sidebar { background: #ffffff; border: 1px solid rgba(226,232,240,.9); border-radius: 16px; padding: 16px; }
 .panel-title { font-size: 16px; font-weight: 800; color: #111827; margin-bottom: 12px; }
-.event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.event-item { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid rgba(226,232,240,.9); border-radius: 12px; padding: 10px; }
+.event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.event-item { display: grid; grid-template-columns: 20px 1fr; align-items: center; background: #f8fafc; border: 1px solid rgba(226,232,240,.9); border-radius: 12px; padding: 10px; }
 .badge { width: 12px; height: 12px; border-radius: 9999px; display: inline-block; }
 .event-title { font-weight: 700; color: #111827; }
 .event-time { font-size: 12px; color: #64748b; }
@@ -412,16 +412,16 @@ export default {
 .create-form input[type="text"], .create-form textarea { width: 100%; border: 1px solid rgba(226,232,240,.9); background: #ffffff; border-radius: 10px; padding: 8px 10px; font-size: 14px; color: #111827; outline: none; transition: box-shadow .15s ease, border-color .15s ease; }
 .create-form input[type="text"]:focus, .create-form textarea:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,.18); }
 .create-form textarea { min-height: 68px; resize: vertical; }
-.form-grid { display: grid; grid-template-columns: 1fr 88px; gap: 10px; align-items: end; }
+.form-grid { display: grid; grid-template-columns: 1fr 88px; align-items: end; }
 .create-form input[type="color"] { width: 100%; height: 40px; border: 1px solid rgba(226,232,240,.9); border-radius: 10px; padding: 0; box-sizing: border-box; }
 .create-form input[type="color"]:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,.18); }
 .create-form select { width: 100%; border: 1px solid rgba(226,232,240,.9); background: #ffffff; border-radius: 10px; padding: 8px 10px; font-size: 14px; color: #111827; outline: none; }
 .create-form select[multiple] { min-height: 96px; }
 
 /* Lista moderna de checkboxes para Responsables */
-.checkbox-list { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.checkbox-list { display: grid; grid-template-columns: 1fr; }
 @media (min-width: 640px) { .checkbox-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.checkbox-item { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid rgba(226,232,240,.9); border-radius: 10px; background: #ffffff; transition: border-color .2s ease, box-shadow .2s ease, transform .05s ease; min-height: 44px; }
+.checkbox-item { display: flex; align-items: center; padding: 10px; border: 1px solid rgba(226,232,240,.9); border-radius: 10px; background: #ffffff; transition: border-color .2s ease, box-shadow .2s ease, transform .05s ease; min-height: 44px; }
 .checkbox-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 6px rgba(0,0,0,.06); }
 .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #8b5cf6; }
 .checkbox-label { color: #0f172a; }
