@@ -1,6 +1,26 @@
 <template>
   <div class="group-list">
-    <transition-group name="list-fade" tag="ul" class="list">
+    <div v-if="loading" class="skeleton">
+      <div v-for="n in 5" :key="'skg-'+n" class="sk-row">
+        <div class="sk-avatar"></div>
+        <div class="sk-lines">
+          <div class="sk-line sk-line-1"></div>
+          <div class="sk-line sk-line-2"></div>
+        </div>
+      </div>
+    </div>
+    <div v-else-if="groups.length === 0" class="empty">
+      <div class="empty-hero" aria-hidden="true">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="6" width="16" height="12" rx="3" stroke="currentColor" stroke-width="2" opacity=".25" />
+          <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div class="empty-title">No hay grupos</div>
+      <div class="empty-sub">Contacta con tu admin para crear un grupo</div>
+      <button class="empty-cta" type="button" @click="$emit('refresh')">Actualizar</button>
+    </div>
+    <transition-group v-else name="list-fade" tag="ul" class="list">
       <li
         v-for="group in groups"
         :key="group.id"
@@ -31,6 +51,7 @@ export default {
       type: Array,
       required: true
     },
+    loading: { type: Boolean, default: false },
     groupUnreadCounts: {
       type: Object,
       default: () => ({})
@@ -111,4 +132,22 @@ export default {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.08); }
 }
+
+/* Skeleton */
+.skeleton { display: flex; flex-direction: column; gap: 12px; padding: 8px; }
+.sk-row { display: flex; align-items: center; gap: 12px; }
+.sk-avatar { width: 30px; height: 30px; border-radius: 50%; background: #e5e7eb; }
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.sk-line { height: 10px; background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9); border-radius: 8px; animation: shimmer 1.2s infinite; }
+.sk-line-1 { width: 40%; }
+.sk-line-2 { width: 60%; opacity: .9; }
+@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+
+/* Empty state */
+.empty { text-align: center; padding: 16px; color: #64748b; }
+.empty-hero { display: inline-flex; align-items: center; justify-content: center; color: #94a3b8; margin-bottom: 8px; }
+.empty-title { font-weight: 800; color: #334155; }
+.empty-sub { font-size: 12px; margin-top: 4px; }
+.empty-cta { margin-top: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(226,232,240,.9); background: #f1f5f9; color: #334155; font-weight: 700; cursor: pointer; }
+.empty-cta:hover { background: #e2e8f0; }
 </style>

@@ -40,15 +40,15 @@
           </div>
           <div class="chats-card">
             <template v-if="activeTab==='all'">
-              <UserList :users="sortedUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" :lastMessageMap="lastMessageMap" @select="selectUser" />
+              <UserList :users="sortedUsers" :loading="loadingUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" :lastMessageMap="lastMessageMap" @select="selectUser" @refresh="refreshUsers" />
               <div class="divider"></div>
-              <GroupList :groups="groups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" />
+              <GroupList :groups="groups" :loading="loadingGroups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" @refresh="refreshGroups" />
             </template>
             <template v-else-if="activeTab==='contacts'">
-              <UserList :users="sortedUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" :lastMessageMap="lastMessageMap" @select="selectUser" />
+              <UserList :users="sortedUsers" :loading="loadingUsers" :unreadCounts="unreadCounts" :selectedUser="selectedUser" :onlineUsers="onlineUsers" :lastMessageMap="lastMessageMap" @select="selectUser" @refresh="refreshUsers" />
             </template>
             <template v-else>
-              <GroupList :groups="groups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" />
+              <GroupList :groups="groups" :loading="loadingGroups" :groupUnreadCounts="groupUnreadCounts" :selectedGroup="selectedGroup" @select="selectGroup" @refresh="refreshGroups" />
             </template>
           </div>
         </div>
@@ -62,8 +62,10 @@
               :chatType="chatType"
               :currentUserId="currentUser && currentUser.id"
               :searchQuery="searchQuery"
+              :loading="loadingMessages"
               @update:searchQuery="searchQuery = $event"
-              @search="searchQuery = $event">
+              @search="searchQuery = $event"
+              @compose="focusComposer">
               <div class="chat-input-area">
                 <div class="chat-input-actions gap8-2">
                   <button class="icon-btn" type="button" title="Emoji" aria-label="Emoji" @click="toggleEmojiPicker">
@@ -74,7 +76,7 @@
                   </button>
                   <input ref="fileInput" type="file" style="display:none" @change="handleFileSelected" />
                 </div>
-                <input v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
+                <input ref="composerInput" v-model="inputMsg" @keyup.enter="send" placeholder="Escribe un mensaje..." />
                 <button @click="send" class="send-btn" aria-label="Enviar">
                   <Icon name="send" :size="18" />
                   <span class="send-label">Enviar</span>
@@ -180,7 +182,10 @@ export default {
       emojis: ['😀','😁','😂','😊','😍','😎','😘','😅','😉','🤩','🥳','😇','🙌','👍','👏','🔥','✨','❤️','💯','🎉'],
       activeTab: 'all',
       lastMessageMap: {},
-      avatarLoaded: false
+      avatarLoaded: false,
+      loadingUsers: false,
+      loadingGroups: false,
+      loadingMessages: false
     }
   },
   methods: {
@@ -210,6 +215,7 @@ export default {
         this.selectedUser = user
         this.selectedGroup = null
         this.chatType = 'user'
+        this.loadingMessages = true
         
         const { fetchMessages, markMessagesAsRead } = await import('../services/chat.service.js')
         const res = await fetchMessages({ receiverId: user.id, userId: this.currentUser && this.currentUser.id })
@@ -229,6 +235,8 @@ export default {
           }
       } catch (e) {
         console.error('Error en selectUser:', e)
+      } finally {
+        this.loadingMessages = false
       }
     },
     async reloadMessages() {
@@ -348,6 +356,7 @@ export default {
         this.selectedGroup = group
         this.selectedUser = null // Limpiar selección de usuario
         this.chatType = 'group'
+        this.loadingMessages = true
         
         const { fetchMessages } = await import('../services/chat.service.js')
         const meId = this.currentUser && this.currentUser.id
@@ -363,6 +372,8 @@ export default {
         }
       } catch (e) {
         console.error('Error en selectGroup:', e)
+      } finally {
+        this.loadingMessages = false
       }
     },
     async send() {
@@ -677,14 +688,46 @@ export default {
       }
     },
     
+    focusComposer() {
+      if (this.$refs.composerInput && typeof this.$refs.composerInput.focus === 'function') {
+        this.$refs.composerInput.focus()
+      }
+    },
+    async refreshUsers() {
+      const { fetchUsers } = await import('../services/user.service.js')
+      try {
+        this.loadingUsers = true
+        const res = await fetchUsers()
+        this.users = Array.isArray(res.data) ? res.data : []
+      } finally { this.loadingUsers = false }
+    },
+    async refreshGroups() {
+      const { fetchGroups } = await import('../services/user.service.js')
+      try {
+        this.loadingGroups = true
+        const me = this.currentUser && this.currentUser.id
+        const res = await fetchGroups(me)
+        this.groups = Array.isArray(res.data) ? res.data : []
+      } finally { this.loadingGroups = false }
+    },
   },
   async mounted() {
     const { fetchUsers, fetchGroups } = await import('../services/user.service.js')
-    const res = await fetchUsers()
-    this.users = res.data
-    const me = this.currentUser && this.currentUser.id
-    const groupRes = await fetchGroups(me)
-    this.groups = groupRes.data
+    try {
+      this.loadingUsers = true
+      const res = await fetchUsers()
+      this.users = Array.isArray(res.data) ? res.data : []
+    } finally {
+      this.loadingUsers = false
+    }
+    try {
+      this.loadingGroups = true
+      const me = this.currentUser && this.currentUser.id
+      const groupRes = await fetchGroups(me)
+      this.groups = Array.isArray(groupRes.data) ? groupRes.data : []
+    } finally {
+      this.loadingGroups = false
+    }
     
     // 获取初始在线用户列表
     await this.fetchOnlineUsers()

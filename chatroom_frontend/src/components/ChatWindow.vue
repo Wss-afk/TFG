@@ -66,7 +66,24 @@
       aria-atomic="false"
       aria-label="Mensajes del chat"
     >
-      <transition-group name="msg" tag="div" class="messages-list">
+      <div v-if="loading" class="messages-skeleton">
+        <div v-for="n in 6" :key="'skm-'+n" class="sk-msg" :class="n % 2 === 0 ? 'left' : 'right'">
+          <div class="sk-bubble"></div>
+        </div>
+      </div>
+      <div v-else-if="(messages && messages.length === 0)" class="messages-empty">
+        <div class="empty-card" role="region" aria-label="No hay mensajes">
+          <div class="empty-hero" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 5.5A3.5 3.5 0 0 1 7.5 2h9A3.5 3.5 0 0 1 20 5.5v7A3.5 3.5 0 0 1 16.5 16H13l-3.5 3.5c-.6.6-1.5.18-1.5-.7V16H7.5A3.5 3.5 0 0 1 4 12.5v-7Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="empty-title">No hay mensajes</div>
+          <div class="empty-sub">Escribe tu primer mensaje para iniciar la conversación.</div>
+          <button type="button" class="empty-cta" @click="$emit('compose')">Escribir mensaje</button>
+        </div>
+      </div>
+      <transition-group v-else name="msg" tag="div" class="messages-list">
         <component
           v-for="(item, idx) in windowedItems"
           :is="item.type === 'separator' ? 'DateSeparator' : 'MessageItem'"
@@ -115,7 +132,8 @@ export default {
     chatGroup: { type: Object, default: null },
     chatType: { type: String, default: 'user' },
     currentUserId: { type: [String, Number], required: true },
-    searchQuery: { type: String, default: '' }
+    searchQuery: { type: String, default: '' },
+    loading: { type: Boolean, default: false }
   },
   data() {
     return {
@@ -351,6 +369,23 @@ export default {
 }
 
 .messages-list { display: flex; flex-direction: column; gap: 0; }
+
+/* Mensajes: skeleton */
+.messages-skeleton { display: flex; flex-direction: column; gap: 12px; padding: 10px; }
+.sk-msg { display: flex; }
+.sk-msg.left { justify-content: flex-start; }
+.sk-msg.right { justify-content: flex-end; }
+.sk-bubble { width: 52%; max-width: 420px; height: 18px; border-radius: 16px; background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9); animation: shimmer 1.2s infinite; }
+@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+
+/* Mensajes: empty */
+.messages-empty { display: flex; align-items: center; justify-content: center; min-height: 280px; }
+.empty-card { text-align: center; color: #64748b; }
+.empty-hero { display: inline-flex; align-items: center; justify-content: center; color: #94a3b8; margin-bottom: 8px; }
+.empty-title { font-weight: 800; color: #334155; }
+.empty-sub { font-size: 12px; margin-top: 4px; }
+.empty-cta { margin-top: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(226,232,240,.9); background: #f1f5f9; color: #334155; font-weight: 700; cursor: pointer; }
+.empty-cta:hover { background: #e2e8f0; }
 
 /* Transiciones GPU-friendly para aparición / desaparición / reordenado */
 .msg-enter-active,

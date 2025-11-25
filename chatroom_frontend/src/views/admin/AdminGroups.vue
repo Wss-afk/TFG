@@ -48,6 +48,7 @@
         <div class="card">
           <div class="card-body p-0">
             <div class="table-responsive">
+              <div class="table-scroll">
               <table class="table table-striped align-middle mb-0">
             <thead>
               <tr>
@@ -68,7 +69,9 @@
                 <td>
                   <span class="group-name-text">{{ g.name }}</span>
                 </td>
-                <td>{{ (g.users || []).length }}</td>
+                <td>
+                  <span class="badge" :class="memberBadgeClass(g)">{{ memberBadgeText(g) }}</span>
+                </td>
                 <td>
                   <div class="d-flex align-items-center gap-2 flex-nowrap actions-row">
                     <button class="btn btn-secondary btn-sm" @click.stop="editGroup(g)">Editar</button>
@@ -78,6 +81,7 @@
               </tr>
             </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
@@ -205,13 +209,38 @@ export default {
     }
   },
   watch: {
-    pageSize() { this.page = 1 },
-    searchGroup() { this.page = 1 }
+    pageSize() { 
+      this.page = 1 
+      try { localStorage.setItem('adminGroups.pageSize', String(this.pageSize)) } catch (e) { void e }
+    },
+    searchGroup() { 
+      this.page = 1 
+      try { localStorage.setItem('adminGroups.search', this.searchGroup) } catch (e) { void e }
+    }
   },
   async mounted() {
+    try {
+      const s = localStorage.getItem('adminGroups.search')
+      if (s !== null) this.searchGroup = s
+      const ps = localStorage.getItem('adminGroups.pageSize')
+      if (ps !== null) {
+        const n = parseInt(ps, 10)
+        if (!isNaN(n)) this.pageSize = n
+      }
+    } catch (e) { void e }
     await Promise.all([this.loadGroups(), this.loadUsers()])
   },
   methods: {
+    memberBadgeText(g) {
+      const n = (g.users || []).length
+      return n === 0 ? 'Sin miembros' : (n + ' miembros')
+    },
+    memberBadgeClass(g) {
+      const n = (g.users || []).length
+      if (n === 0) return 'bg-secondary'
+      if (n < 5) return 'bg-info'
+      return 'bg-success'
+    },
     editGroup(g) {
       this.editTargetGroup = g
       this.editName = g.name
@@ -382,4 +411,9 @@ export default {
 .modal-header h5 { flex: 1; text-align: center; font-weight: 700; color: #495057; }
 /* Centrar y aligerar el encabezado de la columna Nombre */
 .table thead th:nth-child(2) { text-align: center; font-weight: 700; color: #495057; }
+.table-scroll { max-height: 420px; overflow: auto; }
+.table thead th { position: sticky; top: 0; background: #fff; z-index: 2; }
+.table tbody tr:nth-child(even) { background-color: rgba(0,0,0,0.025); }
+.pagination .page-link { min-width: 36px; }
+.pagination .page-item.active .page-link { font-weight: 600; }
 </style>

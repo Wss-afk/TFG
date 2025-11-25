@@ -50,9 +50,9 @@
           <tr>
             <th style="width:60px">ID</th>
             <th>Usuario</th>
-            <th style="width:160px">Rol</th>
-            <th style="width:140px">Habilitado</th>
-            <th style="width:320px">Acciones</th>
+            <th style="width:200px">Rol</th>
+            <th style="width:160px">Habilitado</th>
+            <th style="width:420px">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -64,22 +64,28 @@
           <tr v-for="u in pagedUsers" :key="u.id">
             <td>{{ u.id }}</td>
             <td>
-              <input v-model="u.username" class="form-control form-control-sm" />
+              <input v-model="u.username" class="form-control" />
             </td>
             <td>
-              <select v-model="u.role" class="form-select form-select-sm">
-                <option value="USER">USER</option>
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-              </select>
-            </td>
-            <td>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" v-model="u.enabled">
-                <label class="form-check-label">{{ u.enabled ? 'Activo' : 'Desactivado' }}</label>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge" :class="roleBadgeClass(u.role)">{{ formatRole(u.role) }}</span>
+                <select v-model="u.role" class="form-select">
+                  <option value="USER">USER</option>
+                  <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                </select>
               </div>
             </td>
             <td>
-              <div class="d-flex flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" v-model="u.enabled">
+                  <label class="form-check-label visually-hidden">{{ u.enabled ? 'Activo' : 'Desactivado' }}</label>
+                </div>
+                <span class="badge" :class="u.enabled ? 'bg-success' : 'bg-secondary'">{{ u.enabled ? 'Activo' : 'Desactivado' }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-2 actions-row">
                 <button class="btn btn-primary btn-sm" @click="updateUser(u)">Guardar</button>
                 <button class="btn btn-danger btn-sm" @click="deleteUser(u)">Eliminar</button>
                 <div class="input-group input-group-sm" style="max-width:220px">
@@ -165,15 +171,29 @@ export default {
   watch: {
     pageSize() {
       this.page = 1
+      try { localStorage.setItem('adminUsers.pageSize', String(this.pageSize)) } catch (e) { void e }
     },
     roleFilter() {
       this.page = 1
+      try { localStorage.setItem('adminUsers.role', this.roleFilter) } catch (e) { void e }
     },
     search() {
       this.page = 1
+      try { localStorage.setItem('adminUsers.search', this.search) } catch (e) { void e }
     }
   },
   async mounted() {
+    try {
+      const s = localStorage.getItem('adminUsers.search')
+      if (s !== null) this.search = s
+      const rf = localStorage.getItem('adminUsers.role')
+      if (rf !== null) this.roleFilter = rf
+      const ps = localStorage.getItem('adminUsers.pageSize')
+      if (ps !== null) {
+        const n = parseInt(ps, 10)
+        if (!isNaN(n)) this.pageSize = n
+      }
+    } catch (e) { void e }
     await this.loadUsers()
   },
   methods: {
@@ -189,6 +209,13 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    formatRole(r) {
+      const map = { USER: 'Usuario', SUPER_ADMIN: 'Super Admin' }
+      return map[r] || r
+    },
+    roleBadgeClass(r) {
+      return r === 'SUPER_ADMIN' ? 'bg-warning text-dark' : 'bg-info'
     },
     async createUser() {
       try {
@@ -264,4 +291,12 @@ export default {
   padding: 8px;
 }
 .gap-2 { gap: 8px; }
+.actions-row { gap: 12px; row-gap: 14px; }
+.table thead th, .table tbody td { padding: 12px 16px; }
+.table .form-control, .table .form-select { min-height: 38px; min-width: 200px; }
+.table .badge { font-size: 12px; padding: 6px 8px; }
+.table thead th { position: sticky; top: 0; background: #fff; z-index: 2; }
+.table tbody tr:nth-child(even) { background-color: rgba(0,0,0,0.025); }
+.pagination .page-link { min-width: 36px; }
+.pagination .page-item.active .page-link { font-weight: 600; }
 </style>
