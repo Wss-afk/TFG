@@ -85,4 +85,14 @@ public class UserController {
         int count = onlineUserService.getOnlineUserCount();
         return ResponseEntity.ok(count);
     }
+
+    @PostMapping("/avatar")
+    public ResponseEntity<?> updateAvatar(@RequestParam Long userId, @RequestParam(required = false) String avatarUrl) {
+        Optional<User> opt = userService.findById(userId);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        User u = opt.get();
+        u.setAvatarUrl(avatarUrl != null && !avatarUrl.isBlank() ? avatarUrl : null);
+        User saved = userService.save(u);
+        return ResponseEntity.ok(saved);
+    }
 }

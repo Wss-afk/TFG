@@ -22,15 +22,28 @@
     </ul>
     <div class="dock-footer">
       <div v-if="currentUser" class="current-user" aria-label="Usuario conectado">
-        <img v-if="currentUser.avatarUrl" :src="currentUser.avatarUrl" class="cu-avatar" />
+        <img v-if="currentUser.avatarUrl" :src="currentUser.avatarUrl" class="cu-avatar" @click="openAvatarPreview" />
+        <div v-else class="cu-avatar placeholder" title="Añadir avatar" @click="triggerAvatarChange">
+          <span class="cu-initial">{{ avatarInitial() }}</span>
+        </div>
         <div class="cu-info">
           <div class="cu-name">{{ currentUser.username }}</div>
           <div class="cu-sub">Conectado</div>
         </div>
-        <button type="button" class="cu-menu" title="Opciones" aria-label="Opciones">⋮</button>
+        <input ref="avatarInput" type="file" accept="image/*" style="display:none" @change="handleAvatarSelected" />
       </div>
       <div class="footer-divider" aria-hidden="true"></div>
       <button type="button" class="logout-btn" aria-label="Cerrar sesión" @click="logout">Cerrar sesión</button>
+    </div>
+    <div v-if="avatarPreviewOpen && currentUser && currentUser.avatarUrl" class="modal-backdrop" @click.self="closeAvatarPreview">
+      <div class="modal-card">
+        <img :src="currentUser.avatarUrl" class="avatar-preview" alt="Avatar" />
+        <div class="modal-actions">
+          <button type="button" class="modal-btn" @click="triggerAvatarChange">Cambiar avatar</button>
+          <button type="button" class="modal-btn" @click="removeAvatar">Quitar avatar</button>
+          <button type="button" class="modal-btn" @click="closeAvatarPreview">Cerrar</button>
+        </div>
+      </div>
     </div>
   </aside>
 </template>
@@ -38,8 +51,13 @@
 <script>
 import { mapGetters } from 'vuex'
 import { disconnectWebSocket } from '../services/websocket.js'
+import { uploadAvatar } from '../services/chat.service.js'
+import { updateAvatar } from '../services/user.service.js'
 export default {
   name: 'AppDock',
+  data() {
+    return { avatarPreviewOpen: false }
+  },
   computed: {
     ...mapGetters('auth', ['currentUser']),
     items() {
@@ -76,8 +94,58 @@ export default {
       }
       disconnectWebSocket()
       this.$router.push('/login')
+    },
+    openAvatarPreview() {
+      this.avatarPreviewOpen = true
+    },
+    closeAvatarPreview() {
+      this.avatarPreviewOpen = false
+    },
+    triggerAvatarChange() {
+      const el = this.$refs.avatarInput
+      if (el) el.click()
+    },
+    async handleAvatarSelected(evt) {
+      try {
+        const file = evt.target.files && evt.target.files[0]
+        if (!file) return
+        const res = await uploadAvatar(file)
+        const { url, type } = res.data || {}
+        if (!url || type !== 'image') {
+          alert('Selecciona una imagen válida para tu avatar')
+          return
+        }
+        const userId = this.currentUser && this.currentUser.id
+        if (!userId) return
+        const upd = await updateAvatar(userId, url)
+        const updatedUser = upd?.data || { ...this.currentUser, avatarUrl: url }
+        this.$store.commit('auth/SET_USER', updatedUser)
+        evt.target.value = ''
+        this.avatarPreviewOpen = false
+      } catch (e) {
+        console.error('Error actualizando avatar:', e)
+        alert('No se pudo actualizar el avatar')
+      }
+    },
+    async removeAvatar() {
+      try {
+        const userId = this.currentUser && this.currentUser.id
+        if (!userId) return
+        const upd = await updateAvatar(userId, '')
+        const updatedUser = upd?.data || { ...this.currentUser, avatarUrl: null }
+        this.$store.commit('auth/SET_USER', updatedUser)
+        this.avatarPreviewOpen = false
+      } catch (e) {
+        console.error('Error quitando avatar:', e)
+        alert('No se pudo quitar el avatar')
+      }
+    },
+    avatarInitial() {
+      const n = (this.currentUser && this.currentUser.username) || ''
+      return n ? n.charAt(0).toUpperCase() : '👤'
     }
   }
+  
 }
 </script>
 
@@ -149,16 +217,19 @@ export default {
   box-shadow: var(--shadow);
 }
 .cu-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.35); }
+.cu-avatar.placeholder { display:flex; align-items:center; justify-content:center; background:#e2e8f0; color:#334155; cursor:pointer; }
+.cu-initial { font-weight: 800; }
 .cu-info { flex: 1; min-width: 0; }
 .cu-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cu-sub { font-size: 12px; color: #64748b; }
-.cu-menu {
-  border: none;
-  background: #f1f5f9;
-  color: #334155;
-  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-}
-.cu-menu:hover { background: #e2e8f0; }
+/* Menú eliminado; acciones disponibles en el modal de preview */
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 1050; }
+.modal-card { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 90vw; }
+.avatar-preview { max-width: 56vw; max-height: 70vh; display: block; border-radius: 12px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+.modal-btn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: #f1f5f9; cursor: pointer; }
+.modal-btn:hover { background: #e2e8f0; }
 
 /* Línea divisoria entre tarjeta de usuario y botón de salida */
 .footer-divider {

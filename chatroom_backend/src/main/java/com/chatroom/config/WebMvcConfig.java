@@ -21,7 +21,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         Path base = resolveUploadBase();
         String uploadPath = base.toAbsolutePath().toUri().toString();
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations(uploadPath);
+                .addResourceLocations(uploadPath)
+                .setCachePeriod(31536000); // 1 año de caché para recursos estáticos
     }
 
     private Path resolveUploadBase() {

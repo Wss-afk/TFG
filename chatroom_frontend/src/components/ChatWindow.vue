@@ -20,7 +20,7 @@
         <input
           type="text"
           class="search"
-          placeholder="Buscar en el chat"
+          placeholder="Filtrar en el chat"
           aria-label="Buscar"
           :value="searchQuery"
           @input="onInputSearch"

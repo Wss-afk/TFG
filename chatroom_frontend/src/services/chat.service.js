@@ -26,3 +26,11 @@ export function uploadAttachment(file) {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+export function uploadAvatar(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return axios.post(API_URL + 'upload?kind=avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

@@ -7,9 +7,6 @@
           <span class="welcome-title">Bienvenido</span>
           <span class="welcome-user">{{ currentUser?.username || 'Usuario' }}</span>
         </div>
-        <div class="welcome-right">
-          <Icon name="smile" :size="20" />
-        </div>
       </div>
       <div class="home-grid gap8-2">
         <!-- Columna izquierda: Calendario + Today Task -->
