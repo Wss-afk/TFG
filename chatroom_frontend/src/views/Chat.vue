@@ -7,26 +7,6 @@
         <div class="left">
           <h1 class="topbar-title">Messages</h1>
         </div>
-        <div class="right">
-          <div class="profile" v-if="currentUser">
-            <div v-if="!currentUser.avatarUrl" class="profile-avatar placeholder">{{ userInitials }}</div>
-            <img
-              v-else
-              :src="currentUser.avatarUrl"
-              :srcset="currentUser.avatarUrl + ' 1x, ' + currentUser.avatarUrl + ' 2x'"
-              class="profile-avatar"
-              :class="avatarLoaded ? '' : 'image-loading'"
-              loading="lazy"
-              decoding="async"
-              @load="onAvatarLoad"
-              alt="Avatar"
-            />
-            <div class="profile-info">
-              <div class="profile-name">{{ currentUser.username }}</div>
-              <div class="profile-sub">My settings</div>
-            </div>
-          </div>
-        </div>
       </header>
       <div class="chat-body">
         <div class="sidebar">
@@ -182,7 +162,6 @@ export default {
       emojis: ['😀','😁','😂','😊','😍','😎','😘','😅','😉','🤩','🥳','😇','🙌','👍','👏','🔥','✨','❤️','💯','🎉'],
       activeTab: 'all',
       lastMessageMap: {},
-      avatarLoaded: false,
       loadingUsers: false,
       loadingGroups: false,
       loadingMessages: false
@@ -237,12 +216,8 @@ export default {
         console.error('Error en selectUser:', e)
       } finally {
         this.loadingMessages = false
+        this.scrollToBottom()
       }
-    },
-    async reloadMessages() {
-      const { fetchMessages } = await import('../services/chat.service.js')
-      const res = await fetchMessages({ receiverId: this.selectedUser.id, userId: this.currentUser && this.currentUser.id })
-      this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     },
     handleNewMessage(message) {
       // Resolver senderId, compatible con diferentes estructuras
@@ -374,6 +349,7 @@ export default {
         console.error('Error en selectGroup:', e)
       } finally {
         this.loadingMessages = false
+        this.scrollToBottom()
       }
     },
     async send() {
@@ -1255,21 +1231,19 @@ body {
   background: #f1f5f9;
   cursor: pointer;
 }
-.emoji-btn:hover { background: #e2e8f0; }
+  .emoji-btn:hover { background: #e2e8f0; }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    font-weight: 700;
+  }
+  .toast-success { background: #ecfdf5; color: #065f46; border: 1px solid #10b981; }
+  .toast-error { background: #fef2f2; color: #7f1d1d; border: 1px solid #ef4444; }
+  .toast-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #3b82f6; }
 </style>
-.toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  padding: 10px 14px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-  font-weight: 700;
-}
-.toast-success { background: #ecfdf5; color: #065f46; border: 1px solid #10b981; }
-.toast-error { background: #fef2f2; color: #7f1d1d; border: 1px solid #ef4444; }
-.toast-info { background: #eff6ff; color: #1e3a8a; border: 1px solid #3b82f6; }
-    onAvatarLoad() {
-      this.avatarLoaded = true
-    },

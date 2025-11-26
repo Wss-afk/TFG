@@ -7,7 +7,8 @@
       role="img"
       :aria-label="'Avatar de ' + (senderName || 'usuario')"
     >
-      {{ senderInitial }}
+      <img v-if="senderAvatarUrl" :src="senderAvatarUrl" alt="avatar" class="avatar-img" />
+      <span v-else>{{ senderInitial }}</span>
     </div>
     <div :class="['message-item', isMine ? 'mine' : '']">
       <span class="sender">{{ typeof message.sender === 'object' && message.sender ? message.sender.username : message.sender }}:</span>
@@ -82,6 +83,17 @@ export default {
       if (typeof s === 'object') return s.username || s.name || ''
       return String(s)
     },
+    senderAvatarUrl() {
+      const s = this.message && this.message.sender
+      if (s && typeof s === 'object') {
+        return s.avatarUrl || ''
+      }
+      if (this.isMine && this.$store && this.$store.getters) {
+        const cu = this.$store.getters['auth/currentUser']
+        return (cu && cu.avatarUrl) || ''
+      }
+      return ''
+    },
     senderInitial() {
       const n = this.senderName || ''
       return n ? n.charAt(0).toUpperCase() : '?'
@@ -132,14 +144,16 @@ export default {
 .message-row { display: flex; align-items: flex-end; gap: var(--space-2); margin-bottom: var(--space-2); }
 .message-row.mine { flex-direction: row-reverse; justify-content: flex-start; }
 
-.avatar { width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; color: #1f2937; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: var(--shadow-1); flex: 0 0 28px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; color: #1f2937; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: var(--shadow-1); flex: 0 0 36px; overflow: hidden; }
 .avatar.mine { background: linear-gradient(135deg, var(--color-secondary), #2563eb); color: #fff; }
+.avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 0 0 2px #fff; }
+.avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 
 .message-item {
   margin-bottom: var(--space-3);
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 16px;
-  max-width: min(68%, 48ch);
+  max-width: min(80%, 72ch);
   display: inline-block;
   position: relative;
   word-wrap: break-word;

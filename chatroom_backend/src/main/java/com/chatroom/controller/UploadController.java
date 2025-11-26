@@ -1,13 +1,16 @@
 package com.chatroom.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -15,6 +18,22 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/chat")
 public class UploadController {
+
+    @Value("${app.upload-dir:}")
+    private String uploadDirProp;
+
+    private Path baseDir() {
+        try {
+            if (uploadDirProp != null && !uploadDirProp.isBlank()) {
+                Path p = Paths.get(uploadDirProp);
+                Files.createDirectories(p);
+                return p;
+            }
+        } catch (Exception ignored) {}
+        Path p = Paths.get(System.getProperty("user.home"), "chatroom_uploads");
+        try { Files.createDirectories(p); } catch (IOException ignored) {}
+        return p;
+    }
 
     @PostMapping("/upload")
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
@@ -35,10 +54,12 @@ public class UploadController {
             String uuid = UUID.randomUUID().toString().replace("-", "");
             String filename = uuid + ext;
 
-            Path targetDir = Paths.get("uploads", "messages", kind);
+            Path targetDir = baseDir().resolve("messages").resolve(kind);
             Files.createDirectories(targetDir);
             Path targetPath = targetDir.resolve(filename);
-            file.transferTo(targetPath.toFile());
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
 
             String url = "/uploads/messages/" + kind + "/" + filename;
             Map<String, Object> body = new HashMap<>();

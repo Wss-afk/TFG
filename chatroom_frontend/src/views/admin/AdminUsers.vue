@@ -52,7 +52,7 @@
             <th>Usuario</th>
             <th style="width:200px">Rol</th>
             <th style="width:160px">Habilitado</th>
-            <th style="width:420px">Acciones</th>
+            <th style="width:520px">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -97,6 +97,14 @@
                   <button class="btn btn-outline-secondary" type="button" @click="u._showConfirmPassword = !u._showConfirmPassword">{{ u._showConfirmPassword ? 'Ocultar' : 'Mostrar' }}</button>
                 </div>
                 <button class="btn btn-secondary btn-sm" @click="changePassword(u)">Cambiar contraseña</button>
+
+                <div class="d-flex align-items-center gap-2">
+                  <img v-if="u.avatarUrl" :src="u.avatarUrl" alt="avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />
+                  <button class="btn btn-outline-primary btn-sm" :disabled="u._avatarLoading" @click="triggerAvatar(u)">
+                    {{ u._avatarLoading ? 'Subiendo...' : 'Subir avatar' }}
+                  </button>
+                  <input :ref="'avatarInput'+u.id" type="file" accept="image/*" class="d-none" @change="onAvatarSelected(u, $event)" />
+                </div>
               </div>
             </td>
           </tr>
@@ -208,6 +216,36 @@ export default {
         this.showToast('No se pudieron cargar los usuarios', 'error')
       } finally {
         this.loading = false
+      }
+    },
+    triggerAvatar(u) {
+      const el = this.$refs['avatarInput' + u.id]
+      if (el && el[0]) el[0].click()
+      else if (el) el.click()
+    },
+    async onAvatarSelected(u, evt) {
+      try {
+        const file = evt.target.files && evt.target.files[0]
+        evt.target.value = ''
+        if (!file) return
+        const max = 20 * 1024 * 1024
+        const isImage = /^image\//.test(file.type)
+        if (!isImage) { this.showToast('Selecciona una imagen válida', 'error'); return }
+        if (file.size > max) { this.showToast('La imagen supera 20MB', 'error'); return }
+        u._avatarLoading = true
+        const { uploadAttachment } = await import('../../services/chat.service.js')
+        const res = await uploadAttachment(file)
+        const url = res?.data?.url
+        if (!url) { this.showToast('No se pudo subir la imagen', 'error'); return }
+        const payload = { username: (u.username || '').trim(), avatarUrl: url, role: u.role, enabled: u.enabled }
+        const updated = await adminUpdateUser(this.currentUser.id, u.id, payload)
+        Object.assign(u, updated.data)
+        this.showToast('Avatar actualizado')
+      } catch (error) {
+        const msg = typeof error?.response?.data === 'string' ? error.response.data : 'Error al subir avatar'
+        this.showToast(msg, 'error')
+      } finally {
+        u._avatarLoading = false
       }
     },
     formatRole(r) {
