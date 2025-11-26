@@ -1,17 +1,6 @@
 <template>
   <aside class="app-dock" aria-label="Aplicaciones">
     <div class="brand">
-      <svg class="brand-logo" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="ch-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="var(--brand-gradient-start)"/>
-            <stop offset="100%" stop-color="var(--brand-gradient-end)"/>
-          </linearGradient>
-        </defs>
-        <!-- Logo moderno inventado: triángulo dinámico + círculo acento -->
-        <polygon points="12,46 52,34 22,12" fill="url(#ch-grad)" opacity="0.95"/>
-        <circle cx="46" cy="18" r="7" fill="var(--brand-gradient-end)" opacity="0.9"/>
-      </svg>
       <span class="brand-name">ConnectHub</span>
     </div>
     <ul class="menu">
