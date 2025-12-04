@@ -8,10 +8,18 @@ import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
+
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByReceiver(User receiver);
 
     List<Message> findByGroup(Group group);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Message m WHERE m.sender.id = :userId OR m.receiver.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
 
     @Query("SELECT m FROM Message m WHERE (m.group.id = :groupId OR m.receiver.id = :receiverId)")
     List<Message> findByGroupIdOrReceiverId(@Param("groupId") Long groupId, @Param("receiverId") Long receiverId);

@@ -1,5 +1,6 @@
 package com.chatroom.controller;
 
+import com.chatroom.repository.MessageRepository;
 import com.chatroom.entity.User;
 import com.chatroom.entity.Group;
 import com.chatroom.entity.Role;
@@ -25,6 +26,9 @@ public class AdminController {
 
     @Autowired
     private GroupRepository groupRepository;
+
+    @Autowired
+    private MessageRepository messageRepository;
 
     @Autowired
     private SimpMessageSendingOperations messagingTemplate;
@@ -217,7 +221,20 @@ public class AdminController {
         if (opt.isPresent() && opt.get().getRole() == Role.SUPER_ADMIN) {
             return ResponseEntity.badRequest().body("Cannot delete SUPER_ADMIN");
         }
+
+        // 1. Remover usuario de todos los grupos
+        List<Group> userGroups = groupRepository.findByUsers_Id(id);
+        for (Group g : userGroups) {
+            g.getUsers().removeIf(u -> u.getId().equals(id));
+            groupRepository.save(g);
+        }
+
+        // 2. Eliminar mensajes del usuario (enviados o recibidos)
+        messageRepository.deleteAllByUserId(id);
+
+        // 3. Eliminar usuario
         userRepository.deleteById(id);
+
         auditService.logAdminAction(adminUserId, "USER_DELETE", "USER", id, opt.map(User::getUsername).orElse(null), true, 200,
                 Map.of(), null, null);
         return ResponseEntity.ok().build();
