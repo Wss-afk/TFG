@@ -326,7 +326,7 @@ export default {
 .chat-topbar .left { display: flex; align-items: center; gap: 12px; }
 .chat-topbar .avatar { width: 40px; height: 40px; border-radius: 50%; background: #e2e8f0; color: #1f2937; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
 .chat-topbar .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
-.chat-topbar .avatar.group { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.chat-topbar .avatar.group { background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); }
 .chat-topbar .meta { display: flex; flex-direction: column; }
 .chat-topbar .name { color: #334155; font-weight: 600; }
 .chat-topbar .sub { color: #64748b; font-size: 12px; }

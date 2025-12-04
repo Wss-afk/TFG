@@ -5,7 +5,7 @@
       <button type="button" class="btn-close float-end" @click="toast = null"></button>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 align-items-end mb-3">
+    <div class="filters-card d-flex flex-wrap gap-2 align-items-end">
       <div>
         <label class="form-label">Desde</label>
         <input v-model="filters.fromLocal" type="datetime-local" class="form-control" style="max-width:220px" />
@@ -60,32 +60,28 @@
           </select>
         </div>
         <button class="btn btn-primary" @click="search">Buscar</button>
+        <button class="btn btn-outline-danger" @click="clearHistory">Borrar Historial</button>
       </div>
     </div>
 
-    <div class="card">
+    <div class="table-card">
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-striped align-middle mb-0">
+          <table class="table align-middle mb-0">
             <thead>
               <tr>
                 <th style="width:180px">Fecha</th>
                 <th>Actor</th>
-                <th style="width:140px">Rol</th>
                 <th style="width:200px">Acción</th>
                 <th style="width:120px">Target</th>
-                <th style="width:80px">ID</th>
                 <th>Nombre</th>
                 <th style="width:90px">Éxito</th>
-                <th style="width:110px">Status</th>
-                <th>IP</th>
-                <th>User-Agent</th>
                 <th>Detalles</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="12" class="text-center">
+                <td colspan="7" class="text-center">
                   <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
                 </td>
               </tr>
@@ -97,28 +93,17 @@
                     <small v-if="log.actorId" class="text-muted">ID {{ log.actorId }}</small>
                   </div>
                 </td>
-                <td>
-                  <span class="badge bg-info">{{ formatRole(log.actorRole) }}</span>
-                </td>
                 <td>{{ formatAction(log.action) }}</td>
                 <td><span class="badge bg-light text-dark">{{ formatTargetType(log.targetType) }}</span></td>
-                <td>{{ log.targetId }}</td>
                 <td>{{ log.targetName }}</td>
                 <td>
                   <span class="badge" :class="log.success ? 'bg-success' : 'bg-danger'">{{ log.success ? 'Sí' : 'No' }}</span>
                 </td>
-                <td><span class="badge bg-light text-dark">{{ log.statusCode || '-' }}</span></td>
-                <td>{{ log.ip }}</td>
-                <td class="text-truncate" style="max-width:220px" :title="log.userAgent">{{ log.userAgent }}</td>
-                <td style="max-width:260px">
-                  <div class="d-flex flex-wrap align-items-center gap-1">
-                    <template v-if="inlineDetails(log.details).length">
-                      <span v-for="d in inlineDetails(log.details)" :key="d.k" class="badge bg-secondary">
-                        {{ friendlyKey(d.k) }}: {{ friendlyValue(d.v) }}
-                      </span>
-                    </template>
-                    <button v-if="hasDetails(log.details)" class="btn btn-link btn-sm p-0 ms-1" @click="openDetails(log)">Ver</button>
-                  </div>
+                <td class="text-end">
+                  <button v-if="hasDetails(log.details)" class="btn btn-sm btn-outline-primary py-1 px-3" style="border-radius:20px; font-size:0.8rem" @click="openDetails(log)">
+                    Ver detalles
+                  </button>
+                  <span v-else class="text-muted small">—</span>
                 </td>
               </tr>
             </tbody>
@@ -145,14 +130,32 @@
     <div v-if="detailsModal" class="modal-backdrop" @click.self="closeDetails">
       <div class="modal-card">
         <div class="modal-header">
-          <span>Detalles del evento</span>
+          <div class="d-flex flex-column">
+            <span>Detalles del evento</span>
+            <small class="text-muted fw-normal mt-1">{{ formatAction(selectedLog?.action) }}</small>
+          </div>
           <button type="button" class="btn-close" @click="closeDetails"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-2 small text-muted">
-            Acción: {{ formatAction(selectedLog?.action) }} · Target: {{ formatTargetType(selectedLog?.targetType) }} #{{ selectedLog?.targetId }}
+          <div class="details-grid" v-if="selectedDetailsEntries.length">
+            <div v-for="item in selectedDetailsEntries" :key="item.key" class="detail-item">
+              <div class="detail-label">{{ friendlyKey(item.key) }}</div>
+              <div class="detail-value">{{ item.value }}</div>
+            </div>
           </div>
-          <pre>{{ prettySelectedDetails }}</pre>
+          <div v-else class="text-muted text-center py-4">
+            No hay detalles adicionales para mostrar.
+          </div>
+          
+          <div class="mt-4 pt-3 border-top">
+            <h6 class="text-muted mb-2" style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.5px">Metadatos Técnicos</h6>
+            <div class="technical-info">
+              <div><strong>Target:</strong> {{ formatTargetType(selectedLog?.targetType) }} #{{ selectedLog?.targetId }}</div>
+              <div><strong>IP:</strong> {{ selectedLog?.ip || 'N/A' }}</div>
+              <div><strong>User-Agent:</strong> {{ selectedLog?.userAgent || 'N/A' }}</div>
+              <div><strong>Status Code:</strong> {{ selectedLog?.statusCode || '-' }}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -162,7 +165,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { adminGetAuditLogs } from '../../services/admin.service.js'
+import { adminGetAuditLogs, adminClearAuditLogs } from '../../services/admin.service.js'
 
 export default {
   name: 'AdminAudit',
@@ -194,11 +197,14 @@ export default {
       if (!this.toast) return ''
       return this.toast.type === 'error' ? 'alert-danger' : 'alert-success'
     },
-    prettySelectedDetails() {
-      if (!this.selectedLog) return '—'
+    selectedDetailsEntries() {
+      if (!this.selectedLog) return []
       const obj = this.getDetailsObject(this.selectedLog.details)
-      if (!obj) return '—'
-      try { return JSON.stringify(obj, null, 2) } catch { return String(this.selectedLog.details) }
+      if (!obj) return []
+      return Object.entries(obj).map(([k, v]) => ({
+        key: k,
+        value: v === null ? 'null' : (typeof v === 'object' ? JSON.stringify(v) : String(v))
+      }))
     }
   },
   watch: {
@@ -297,6 +303,17 @@ export default {
         this.loading = false
       }
     },
+    async clearHistory() {
+      if (!confirm('⚠️ ¿Estás seguro? Se borrarán TODOS los registros de auditoría.\n\nEsta acción no se puede deshacer.')) return
+      try {
+        await adminClearAuditLogs(this.currentUser.id)
+        this.showToast('Historial eliminado correctamente')
+        this.page = 1
+        this.search()
+      } catch (error) {
+        this.showToast('Error al eliminar historial', 'error')
+      }
+    },
     goTo(p) {
       const newPage = Math.min(Math.max(1, p), this.totalPages)
       if (newPage !== this.page) { this.page = newPage; this.search() }
@@ -310,18 +327,84 @@ export default {
 </script>
 
 <style scoped>
-.admin-audit { padding: 8px; }
-.gap-2 { gap: 8px; }
+.admin-audit { padding: 16px; max-width: 1400px; margin: 0 auto; }
+.gap-2 { gap: 12px; }
 .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Filtros más limpios */
+.filters-card {
+  background: #fff; border-radius: 12px; padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px;
+  border: 1px solid #f1f5f9;
+}
+.form-label { font-weight: 600; color: #64748b; font-size: 0.85rem; margin-bottom: 4px; }
+.form-control {
+  border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.9rem; padding: 8px 12px;
+  background-color: #fff;
+}
+.form-select {
+  border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.9rem;
+  padding: 8px 36px 8px 12px; /* Extra right padding for arrow */
+  background-color: #fff;
+  line-height: 1.5;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+/* Tabla moderna */
+.table-card {
+  background: #fff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+}
+.table { margin-bottom: 0; }
+.table thead th {
+  background: #f8fafc; color: #475569; font-weight: 700; font-size: 0.85rem;
+  text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 16px; border-bottom: 1px solid #e2e8f0;
+}
+.table tbody td {
+  padding: 14px 16px; color: #334155; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9;
+}
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover { background-color: #f8fafc; }
+
+/* Badges */
+.badge { padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.3px; }
+.bg-success { background: #dcfce7 !important; color: #166534; }
+.bg-danger { background: #fee2e2 !important; color: #991b1b; }
+.bg-light { background: #f1f5f9 !important; color: #475569; border: 1px solid #e2e8f0; }
+.bg-secondary { background: #f3f4f6 !important; color: #4b5563; border: 1px solid #e5e7eb; }
+
+/* Modal */
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center; z-index: 1050;
 }
 .modal-card {
-  background: #fff; border-radius: 8px; width: min(800px, 92vw);
-  max-height: 80vh; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  background: #fff; border-radius: 12px; width: min(700px, 90vw);
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); overflow: hidden;
+  animation: modalIn 0.2s ease-out;
 }
-.modal-header { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom: 1px solid #eee; }
-.modal-body { padding: 12px; overflow: auto; }
-.modal-body pre { margin: 0; font-size: 12px; background: #f8f9fa; padding: 12px; border-radius: 6px; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid #f1f5f9; background: #fff;
+}
+.modal-header span { font-weight: 700; color: #1e293b; font-size: 1.1rem; }
+.modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; background: #fff; }
+.details-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;
+}
+.detail-item {
+  background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;
+}
+.detail-label {
+  font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;
+}
+.detail-value {
+  font-size: 0.9rem; color: #1e293b; word-break: break-word; font-family: 'Inter', sans-serif;
+}
+.technical-info {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: #475569;
+}
 </style>

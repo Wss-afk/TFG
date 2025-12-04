@@ -151,43 +151,49 @@ export default {
 
 <style scoped>
 .app-dock {
-  flex: 0 0 220px; /* ampliar caja del dock */
+  flex: 0 0 260px; /* ampliar caja del dock */
   background: #ffffff;
   border-right: 1px solid rgba(226, 232, 240, 0.8);
   display: flex;
   flex-direction: column;
-  padding: 10px 10px; /* más espacio interior para el título */
+  padding: 16px 20px; /* más espacio interior para el título */
   height: 100vh;
   overflow-y: auto;
-  margin-right: 18px; /* más espacio hacia la derecha */
+  margin-right: 0; /* Reset margin, layout handled by parent */
+  position: sticky; top: 0;
+  z-index: 1000; /* Ensure dock and its modals stay on top of content */
 }
 
 .brand {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 10px 18px 10px; /* aumenta separación del borde */
-  border-bottom: 1px solid rgba(226,232,240,0.8);
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 4px 24px 4px; /* aumenta separación del borde */
+  border-bottom: 1px solid rgba(226,232,240,0.6);
+  margin-bottom: 24px;
 }
-.brand-logo { width: 32px; height: 32px; filter: drop-shadow(0 4px 10px rgba(79,70,229,.25)); }
+.brand-logo { width: 36px; height: 36px; filter: drop-shadow(0 4px 10px rgba(79,70,229,.25)); }
 .brand-name {
-  font-size: 24px; font-weight: 800; letter-spacing: .4px; color: #1f2937;
+  font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #1e293b;
 }
 
-.menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.menu { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .menu-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 14px; border-radius: 12px; cursor: pointer;
-  color: #94a3b8; background: transparent; transition: all .2s ease;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: 14px; cursor: pointer;
+  color: #64748b; background: transparent; transition: all .2s ease;
+  font-weight: 600;
 }
-.menu-item .icon { width: 24px; text-align: center; font-size: 18px; }
-.menu-item .label { font-weight: 600; letter-spacing: .2px; }
-.menu-item:hover { background: #f1f5f9; color: #475569; }
-.menu-item.active { color: var(--brand-gradient-start); background: var(--color-bg-gradient-start); }
+.menu-item .icon { width: 24px; text-align: center; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+.menu-item .label { font-weight: 600; font-size: 0.95rem; letter-spacing: 0.2px; }
+.menu-item:hover { background: #f8fafc; color: #334155; transform: translateX(4px); }
+.menu-item.active {
+  color: var(--brand-gradient-start);
+  background: #eff6ff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
 
 .dock-footer {
   margin-top: auto;
-  padding: 16px 0 12px;
-  position: sticky;
-  bottom: 0; /* coloca el botón más abajo, pegado al borde inferior */
+  padding: 24px 0 16px;
   background: #ffffff;
 }
 .logout-btn {

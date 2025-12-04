@@ -128,12 +128,27 @@ public class AdminController {
             }
             u.setUsername(newUsernameTrimmed);
         }
-        if (update.getAvatarUrl() != null) u.setAvatarUrl(update.getAvatarUrl());
+        if (update.getAvatarUrl() != null) {
+            // Empty string indicates removal of avatar
+            u.setAvatarUrl(update.getAvatarUrl().isEmpty() ? null : update.getAvatarUrl());
+        }
         if (update.getRole() != null) u.setRole(update.getRole());
         // Permitir cambiar habilitación para usuarios no SUPER_ADMIN
         boolean wasEnabled = Boolean.TRUE.equals(u.isEnabled());
         u.setEnabled(update.isEnabled());
         User saved = userRepository.save(u);
+
+        // Notificar actualización de perfil a todos los clientes para refrescar avatares
+        try {
+            Map<String, Object> updateMsg = new HashMap<>();
+            updateMsg.put("action", "user_updated");
+            updateMsg.put("userId", saved.getId());
+            updateMsg.put("username", saved.getUsername());
+            updateMsg.put("avatarUrl", saved.getAvatarUrl());
+            messagingTemplate.convertAndSend("/topic/public", updateMsg);
+        } catch (Exception e) {
+            // best-effort
+        }
 
         // Si se deshabilita un usuario que estaba habilitado, avisar al cliente para que desconecte
         if (wasEnabled && !Boolean.TRUE.equals(saved.isEnabled())) {

@@ -15,7 +15,7 @@ export function adminGetUsers(adminUserId) {
   return axios.get(API_URL + 'users', adminHeaders(adminUserId))
 }
 
-export function adminCreateUser(adminUserId, user) {
+export function adminCreateUser(adminUserId, user) {                                      
   return axios.post(API_URL + 'users', user, adminHeaders(adminUserId))
 }
 
@@ -78,4 +78,8 @@ export function adminGetAuditLogs(adminUserId, {
     size
   }
   return axios.get(API_URL + 'audit', config)
+}
+
+export function adminClearAuditLogs(adminUserId) {
+  return axios.delete(API_URL + 'audit', adminHeaders(adminUserId))
 }

@@ -74,4 +74,16 @@ public class AuditController {
         Page<AuditLog> result = auditLogRepository.findAll(spec, pageable);
         return ResponseEntity.ok(result);
     }
+
+    @DeleteMapping("/audit")
+    public ResponseEntity<?> clearAuditLogs(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId) {
+        ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
+        if (forbidden != null) return forbidden;
+        
+        auditService.clearAllLogs();
+        // Registrar que se ha limpiado el historial (será el primer y único registro)
+        auditService.logAdminAction(adminUserId, "AUDIT_CLEAR", "SYSTEM", null, "Historial Completo", true, 200, null, null, null);
+        
+        return ResponseEntity.ok().build();
+    }
 }

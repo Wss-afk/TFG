@@ -85,25 +85,51 @@
               </div>
             </td>
             <td>
-              <div class="d-flex flex-wrap gap-2 actions-row">
-                <button class="btn btn-primary btn-sm" @click="updateUser(u)">Guardar</button>
-                <button class="btn btn-danger btn-sm" @click="deleteUser(u)">Eliminar</button>
-                <div class="input-group input-group-sm" style="max-width:220px">
-                  <input v-model="u._newPassword" :type="u._showNewPassword ? 'text' : 'password'" class="form-control" placeholder="Nueva contraseña" />
-                  <button class="btn btn-outline-secondary" type="button" @click="u._showNewPassword = !u._showNewPassword">{{ u._showNewPassword ? 'Ocultar' : 'Mostrar' }}</button>
-                </div>
-                <div class="input-group input-group-sm" style="max-width:220px">
-                  <input v-model="u._confirmPassword" :type="u._showConfirmPassword ? 'text' : 'password'" class="form-control" placeholder="Confirmar" />
-                  <button class="btn btn-outline-secondary" type="button" @click="u._showConfirmPassword = !u._showConfirmPassword">{{ u._showConfirmPassword ? 'Ocultar' : 'Mostrar' }}</button>
-                </div>
-                <button class="btn btn-secondary btn-sm" @click="changePassword(u)">Cambiar contraseña</button>
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn-icon btn-icon-success" title="Guardar cambios" @click="updateUser(u)">
+                  <Icon name="check" :size="18" />
+                </button>
+                
+                <button class="btn-icon btn-icon-warning" title="Cambiar contraseña" @click="u._showPasswordModal = true">
+                  <Icon name="key" :size="18" />
+                </button>
 
-                <div class="d-flex align-items-center gap-2">
-                  <img v-if="u.avatarUrl" :src="u.avatarUrl" alt="avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />
-                  <button class="btn btn-outline-primary btn-sm" :disabled="u._avatarLoading" @click="triggerAvatar(u)">
-                    {{ u._avatarLoading ? 'Subiendo...' : 'Subir avatar' }}
-                  </button>
+                <div class="avatar-upload-wrapper" title="Cambiar avatar">
+                  <img v-if="u.avatarUrl" :src="u.avatarUrl" class="mini-avatar" @click="triggerAvatar(u)" />
+                  <div v-else class="btn-icon btn-icon-primary" @click="triggerAvatar(u)">
+                    <Icon name="upload" :size="18" />
+                  </div>
+                  <button v-if="u.avatarUrl" class="btn-remove-avatar" title="Borrar avatar" @click.stop="removeAvatar(u)">×</button>
                   <input :ref="'avatarInput'+u.id" type="file" accept="image/*" class="d-none" @change="onAvatarSelected(u, $event)" />
+                </div>
+
+                <button class="btn-icon btn-icon-danger" title="Eliminar usuario" @click="deleteUser(u)">
+                  <Icon name="trash" :size="18" />
+                </button>
+              </div>
+              
+              <!-- Modal simple para contraseña -->
+              <div v-if="u._showPasswordModal" class="password-modal-overlay">
+                <div class="password-modal">
+                  <h5>Cambiar contraseña para {{ u.username }}</h5>
+                  <div class="mb-3">
+                    <div class="input-group input-group-sm mb-2">
+                      <input v-model="u._newPassword" :type="u._showNewPassword ? 'text' : 'password'" class="form-control" placeholder="Nueva contraseña" />
+                      <button class="btn btn-outline-secondary" type="button" @click="u._showNewPassword = !u._showNewPassword">
+                        <Icon :name="u._showNewPassword ? 'eye-off' : 'eye'" :size="14" />
+                      </button>
+                    </div>
+                    <div class="input-group input-group-sm">
+                      <input v-model="u._confirmPassword" :type="u._showConfirmPassword ? 'text' : 'password'" class="form-control" placeholder="Confirmar" />
+                      <button class="btn btn-outline-secondary" type="button" @click="u._showConfirmPassword = !u._showConfirmPassword">
+                        <Icon :name="u._showConfirmPassword ? 'eye-off' : 'eye'" :size="14" />
+                      </button>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-secondary btn-sm" @click="u._showPasswordModal = false">Cancelar</button>
+                    <button class="btn btn-primary btn-sm" @click="changePassword(u); u._showPasswordModal = false">Guardar</button>
+                  </div>
                 </div>
               </div>
             </td>
@@ -132,6 +158,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import Icon from '../../components/Icon.vue'
 import { 
   adminGetUsers,
   adminCreateUser,
@@ -142,6 +169,7 @@ import {
 
 export default {
   name: 'AdminUsers',
+  components: { Icon },
   data() {
     return {
       loading: false,
@@ -240,12 +268,36 @@ export default {
         const payload = { username: (u.username || '').trim(), avatarUrl: url, role: u.role, enabled: u.enabled }
         const updated = await adminUpdateUser(this.currentUser.id, u.id, payload)
         Object.assign(u, updated.data)
+
+        // Si soy yo mismo, actualizar store
+        if (u.id === this.currentUser.id) {
+          this.$store.commit('auth/SET_USER', { ...this.currentUser, avatarUrl: url })
+        }
+
         this.showToast('Avatar actualizado')
       } catch (error) {
         const msg = typeof error?.response?.data === 'string' ? error.response.data : 'Error al subir avatar'
         this.showToast(msg, 'error')
       } finally {
         u._avatarLoading = false
+      }
+    },
+    async removeAvatar(u) {
+      try {
+        if (!confirm('¿Borrar avatar y volver al predeterminado?')) return
+        // Send empty string to signal removal to backend
+        const payload = { username: u.username, avatarUrl: '', role: u.role, enabled: u.enabled }
+        const res = await adminUpdateUser(this.currentUser.id, u.id, payload)
+        Object.assign(u, res.data)
+        
+        // Si el usuario editado soy yo mismo, actualizar el store inmediatamente
+        if (u.id === this.currentUser.id) {
+          this.$store.commit('auth/SET_USER', { ...this.currentUser, avatarUrl: null })
+        }
+        
+        this.showToast('Avatar eliminado')
+      } catch (error) {
+        this.showToast('Error al eliminar avatar', 'error')
       }
     },
     formatRole(r) {
@@ -280,6 +332,12 @@ export default {
         const payload = { username, avatarUrl: u.avatarUrl, role: u.role, enabled: u.enabled }
         const res = await adminUpdateUser(this.currentUser.id, u.id, payload)
         Object.assign(u, res.data)
+
+        // Si soy yo mismo, actualizar store (por si cambié username)
+        if (u.id === this.currentUser.id) {
+          this.$store.commit('auth/SET_USER', { ...this.currentUser, username: u.username, role: u.role })
+        }
+
         this.showToast('Usuario actualizado')
       } catch (error) {
         const msg = typeof error?.response?.data === 'string' ? error.response.data : 'Error al actualizar usuario'
@@ -337,4 +395,35 @@ export default {
 .table tbody tr:nth-child(even) { background-color: rgba(0,0,0,0.025); }
 .pagination .page-link { min-width: 36px; }
 .pagination .page-item.active .page-link { font-weight: 600; }
+
+.password-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: center; justify-content: center; z-index: 1100;
+}
+.password-modal {
+  background: #fff; padding: 20px; border-radius: 8px; width: 300px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-icon {
+  width: 32px; height: 32px; border: none; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s; color: #fff;
+}
+.btn-icon:hover { transform: translateY(-2px); filter: brightness(1.1); }
+.btn-icon-success { background: #10b981; }
+.btn-icon-warning { background: #f59e0b; }
+.btn-icon-danger { background: #ef4444; }
+.btn-icon-primary { background: #3b82f6; }
+
+.avatar-upload-wrapper { cursor: pointer; position: relative; width: 32px; height: 32px; }
+.mini-avatar { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; border: 1px solid #e2e8f0; transition: transform 0.2s; display: block; }
+.avatar-upload-wrapper:hover .mini-avatar { border-color: #3b82f6; }
+.btn-remove-avatar {
+  position: absolute; top: -6px; right: -6px; width: 16px; height: 16px;
+  background: #ef4444; color: #fff; border-radius: 50%; border: none;
+  font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s; cursor: pointer;
+}
+.avatar-upload-wrapper:hover .btn-remove-avatar { opacity: 1; }
 </style>
