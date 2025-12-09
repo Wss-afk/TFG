@@ -18,43 +18,73 @@
       </header>
 
       <section class="calendar-wrap gap8-2">
-        <div class="calendar">
-          <div class="weekdays gap8-1">
-            <div v-for="d in weekdays" :key="d" class="wd">{{ d }}</div>
-          </div>
-          <transition name="fade-slide" mode="out-in">
-            <div class="days gap8-1" :key="monthLabel">
-              <div v-for="n in startOffset" :key="'empty-'+n" class="day empty"></div>
-              <div
-                v-for="day in daysInMonth"
-                :key="day"
-                :class="['day', isToday(day) && 'today', isSelected(day) && 'selected']"
-                @click="selectDay(day)"
-                @dblclick="openCreateForm"
-              >
-                <div class="day-header">
-                  <span class="num">{{ day }}</span>
+        <div class="calendar-column">
+          <div class="calendar">
+            <div class="weekdays gap8-1">
+              <div v-for="d in weekdays" :key="d" class="wd">{{ d }}</div>
+            </div>
+            <transition name="fade-slide" mode="out-in">
+              <div class="days gap8-1" :key="monthLabel">
+                <div v-for="n in startOffset" :key="'empty-'+n" class="day empty"></div>
+                <div
+                  v-for="day in daysInMonth"
+                  :key="day"
+                  :class="['day', isToday(day) && 'today', isSelected(day) && 'selected']"
+                  @click="selectDay(day)"
+                  @dblclick="openCreateForm"
+                >
+                  <div class="day-header">
+                    <span class="num">{{ day }}</span>
+                  </div>
+                  <div class="event-indicators">
+                    <div
+                      v-for="(ev, i) in eventsForDay(day).slice(0, 3)"
+                      :key="i"
+                      class="event-indicator"
+                      :style="{ backgroundColor: ev.color }"
+                      :title="ev.title + ' (' + ev.time + ')'"
+                    ></div>
+                    <div v-if="eventsForDay(day).length > 3" class="event-indicator-more">
+                      +{{ eventsForDay(day).length - 3 }}
+                    </div>
+                  </div>
                 </div>
-                <div class="dots gap8-1">
-                  <span
-                    v-for="(ev, i) in eventsForDay(day).slice(0,3)"
-                    :key="i"
-                    class="dot"
-                    :style="{ background: ev.color }"
-                    :title="ev.title + ' (' + ev.time + ')'"
-                  ></span>
-                  <span v-if="eventsForDay(day).length > 3" class="more" :title="eventsForDay(day).length - 3 + ' eventos más'">+{{ eventsForDay(day).length - 3 }}</span>
+              </div>
+            </transition>
+          </div>
+
+          <div class="month-agenda-section">
+            <h2 class="section-title">Agenda de {{ monthLabel }}</h2>
+            <div class="agenda-list">
+              <div v-if="monthEvents.length === 0" class="agenda-empty">
+                No hay eventos programados para este mes.
+              </div>
+              <div v-else v-for="ev in monthEvents" :key="'m-'+ev.id" :class="['agenda-item', isPastEvent(ev) && 'is-past']" @click="selectDayAndEvent(ev)">
+                <div class="agenda-date">
+                  <span class="agenda-day">{{ new Date(ev.date).getDate() }}</span>
+                  <span class="agenda-weekday">{{ getWeekdayShort(ev.date) }}</span>
+                </div>
+                <div class="agenda-content">
+                  <div class="agenda-marker" :style="{ backgroundColor: ev.color }"></div>
+                  <div class="agenda-details">
+                    <div class="agenda-title">{{ ev.title }}</div>
+                    <div class="agenda-time">{{ ev.time || 'Todo el día' }}</div>
+                  </div>
+                </div>
+                <div class="agenda-meta">
+                   <div class="agenda-user" v-if="ev.createdById">
+                     <Icon name="user" :size="12" /> {{ usernameById(ev.createdById) }}
+                   </div>
                 </div>
               </div>
             </div>
-          </transition>
+          </div>
         </div>
 
         <aside class="sidebar">
           <div class="panel">
             <div class="panel-header-row">
-              <h2 class="panel-title">{{ selectedDay ? `Eventos: ${selectedDayLabel}` : 'Eventos del mes' }}</h2>
-              <button v-if="selectedDay" class="text-btn" @click="clearSelection">Ver Mes</button>
+              <h2 class="panel-title">{{ selectedDay ? `Eventos: ${selectedDayLabel}` : 'Selecciona un día' }}</h2>
             </div>
             
             <ul class="event-list gap8-2">
@@ -71,7 +101,7 @@
               </template>
               <template v-else>
                 <transition-group name="list" tag="div" style="display:contents">
-                <li v-for="ev in filteredEvents" :key="ev.id" class="event-item gap8-2" @click="openEventDetails(ev)" style="cursor: pointer">
+                <li v-for="ev in filteredEvents" :key="ev.id" :class="['event-item', isPastEvent(ev) && 'is-past']" @click="openEventDetails(ev)" style="cursor: pointer">
                   <div class="event-left">
                     <span class="badge" :style="{ background: ev.color }"></span>
                   </div>
@@ -88,10 +118,17 @@
                   </div>
                 </li>
                 </transition-group>
-                <li v-if="filteredEvents.length === 0" class="event-empty">
-                  {{ selectedDay ? 'No hay eventos para este día' : 'Sin eventos este mes' }}
-                  <div v-if="selectedDay" style="margin-top: 12px">
-                    <button class="text-btn-primary" @click="openCreateForm">Crear Evento</button>
+                <li v-if="filteredEvents.length === 0" class="event-empty-state">
+                  <div class="empty-illustration">
+                    <Icon name="calendar" :size="48" />
+                  </div>
+                  <h3 class="empty-title">{{ selectedDay ? 'Sin planes para hoy' : 'Sin eventos este mes' }}</h3>
+                  <p class="empty-desc" v-if="selectedDay">Parece un día tranquilo. ¿Por qué no añades un nuevo evento?</p>
+                  <p class="empty-desc" v-else>No hay eventos programados para este mes.</p>
+                  <div v-if="selectedDay" style="margin-top: 20px">
+                    <button class="primary-sm" @click="openCreateForm">
+                      <Icon name="plus" :size="16" /> Crear Evento
+                    </button>
                   </div>
                 </li>
               </template>
@@ -215,7 +252,9 @@
             </transition>
 
             <div class="panel-actions">
-              <button class="primary" @click="openCreateForm">Nuevo evento</button>
+              <button class="primary full-width" @click="openCreateForm">
+                <Icon name="plus" :size="18" style="margin-right: 6px"/> Nuevo evento
+              </button>
             </div>
           </div>
         </aside>
@@ -265,7 +304,8 @@ export default {
       return mondayIndex
     },
     monthLabel() {
-      return this.cursor.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+      const s = this.cursor.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+      return s.charAt(0).toUpperCase() + s.slice(1)
     },
     selectedDayLabel() {
       if (!this.selectedDay) return ''
@@ -286,10 +326,29 @@ export default {
         const key = this.toISO(this.year, this.month, this.selectedDay)
         return this.events.filter(e => e.date === key)
       }
-      return this.monthEvents
+      return [] // Always empty if no day selected, though selectedDay is init to today
     }
   },
   methods: {
+    getWeekdayShort(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase();
+    },
+    selectDayAndEvent(ev) {
+        if (ev.date) {
+            const d = new Date(ev.date);
+            // Ensure we switch month if needed (though monthEvents only shows current month)
+            this.selectedDay = d.getDate();
+        }
+        this.openEventDetails(ev);
+    },
+    isPastEvent(ev) {
+      if (!ev.date) return false
+      const now = new Date()
+      const today = this.toISO(now.getFullYear(), now.getMonth(), now.getDate())
+      return ev.date < today
+    },
     pad2(n) { return String(n).padStart(2,'0') },
     toISO(y,m,d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}` },
     isToday(day) {
@@ -465,20 +524,62 @@ export default {
 }
 .nav-btn:hover { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
 .primary {
-  padding: 8px 20px; border-radius: 12px; border: none;
+  padding: 10px 20px; border-radius: 12px; border: none;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: #fff; font-weight: 600; cursor: pointer;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
   transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
 }
+.primary.full-width { width: 100%; }
 .primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35); }
 
 .calendar-wrap { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+.calendar-column { display: flex; flex-direction: column; gap: 24px; }
 .calendar {
   background: #ffffff; border-radius: 24px; padding: 24px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
   border: 1px solid #f1f5f9;
 }
+
+.month-agenda-section {
+  background: #ffffff; border-radius: 24px; padding: 24px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+}
+.section-title { font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 20px; }
+
+.agenda-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.agenda-empty { color: #94a3b8; font-style: italic; grid-column: 1/-1; text-align: center; padding: 20px; }
+
+.agenda-item {
+  display: flex; align-items: center; gap: 16px;
+  background: #fff; border: 1px solid #f1f5f9; border-radius: 16px;
+  padding: 16px; cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.agenda-item:hover {
+  transform: translateY(-2px); border-color: #cbd5e1;
+  box-shadow: 0 8px 16px -4px rgba(0,0,0,0.08);
+}
+
+.agenda-date {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 50px; height: 50px; background: #f8fafc; border-radius: 12px;
+  border: 1px solid #e2e8f0; flex-shrink: 0;
+}
+.agenda-day { font-size: 1.2rem; font-weight: 800; color: #0f172a; line-height: 1; }
+.agenda-weekday { font-size: 0.65rem; font-weight: 700; color: #64748b; margin-top: 2px; }
+
+.agenda-content { flex: 1; display: flex; align-items: flex-start; gap: 10px; overflow: hidden; }
+.agenda-marker { width: 4px; height: 32px; border-radius: 4px; flex-shrink: 0; margin-top: 4px; }
+.agenda-details { display: flex; flex-direction: column; overflow: hidden; }
+.agenda-title { font-weight: 700; color: #334155; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-time { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+
+.agenda-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.agenda-user { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: #64748b; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; }
+
 .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 16px; }
 .wd {
   padding: 10px; text-align: center; color: #94a3b8; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;
@@ -487,17 +588,19 @@ export default {
 .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
 .day {
   background: #fff; border: 1px solid #f1f5f9; border-radius: 16px;
-  padding: 8px; min-height: 100px; position: relative;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 10px; min-height: 110px; position: relative;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   cursor: pointer; display: flex; flex-direction: column;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 .day:hover {
-  border-color: #e2e8f0; transform: translateY(-4px);
-  box-shadow: 0 12px 20px -10px rgba(0, 0, 0, 0.1);
-  z-index: 2;
+  border-color: #6366f1; transform: translateY(-4px);
+  box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.15);
+  z-index: 10;
 }
 .day.today {
   background: #f0fdfa; border-color: #14b8a6;
+  box-shadow: inset 0 0 0 1px #14b8a6;
 }
 .day.today .num {
   background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
@@ -507,27 +610,41 @@ export default {
 }
 .day.selected {
   border-color: #6366f1; background: #eef2ff;
+  box-shadow: inset 0 0 0 1px #6366f1;
 }
 .day.empty { visibility: hidden; pointer-events: none; }
 
 .day-header { display: flex; justify-content: flex-end; margin-bottom: 6px; }
 .num { font-weight: 700; color: #475569; font-size: 0.95rem; transition: color 0.2s; padding: 4px; }
 
-.dots { display: flex; gap: 4px; flex-wrap: wrap; align-content: flex-start; }
-.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.more { font-size: 10px; color: #64748b; font-weight: 600; background: #f1f5f9; padding: 2px 4px; border-radius: 4px; }
+.event-title { font-weight: 700; color: #1e293b; font-size: 0.95rem; margin-bottom: 2px; }
+.event-time { font-size: 0.8rem; color: #64748b; font-weight: 500; }
+.event-meta { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+.event-desc { font-size: 0.8rem; color: #64748b; margin-top: 6px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.event-indicators { display: flex; flex-direction: column; gap: 3px; margin-top: auto; padding-top: 4px; }
+.event-indicator { 
+  height: 6px; border-radius: 4px; width: 100%; 
+  opacity: 0.85; transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.event-indicator:hover { opacity: 1; transform: scaleX(1.02); }
+.event-indicator-more { 
+  font-size: 10px; color: #64748b; font-weight: 700; text-align: right; 
+  background: rgba(241, 245, 249, 0.8); padding: 1px 4px; border-radius: 4px; align-self: flex-end;
+}
 
 .sidebar {
   background: #ffffff; border-radius: 24px; padding: 24px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
   border: 1px solid #f1f5f9; display: flex; flex-direction: column;
 }
 .panel-header-row {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
 }
-.panel-title { font-size: 18px; font-weight: 800; color: #0f172a; margin: 0; }
-.text-btn { background: none; border: none; color: #6366f1; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-.text-btn:hover { text-decoration: underline; }
+.panel-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
+.text-btn { background: none; border: none; color: #6366f1; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: color 0.2s; }
+.text-btn:hover { color: #4f46e5; text-decoration: none; }
 .text-btn-primary {
   background: none; border: 2px solid #6366f1; color: #6366f1;
   font-weight: 700; cursor: pointer; font-size: 0.9rem;
@@ -535,36 +652,52 @@ export default {
 }
 .text-btn-primary:hover { background: #6366f1; color: #fff; }
 
-.event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 600px; padding-right: 4px; }
+.event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; max-height: calc(100vh - 200px); padding-right: 4px; }
 .event-item {
-  display: grid; grid-template-columns: 4px 1fr; gap: 12px;
-  background: #fff; border: 1px solid #f1f5f9; border-radius: 12px;
-  padding: 12px 16px; transition: all 0.2s; position: relative; overflow: hidden;
+  display: flex; align-items: flex-start; gap: 16px;
+  background: #fff; border: 1px solid #f1f5f9; border-radius: 16px;
+  padding: 16px; transition: all 0.25s ease; position: relative; overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
 .event-item:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-  border-color: #e2e8f0;
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
 }
-.event-left { display: none; } /* Hide old badge, use border instead */
+.event-left { display: none; } 
 .event-item::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
   background: var(--event-color, #6366f1);
 }
-/* Since I can't easily set var(--event-color) in CSS without style binding on the item, I will use the badge approach but styled differently or stick to inline style for the strip */
-/* Revert grid to include badge but styled better */
-.event-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  background: #fff; border: 1px solid #f1f5f9; border-radius: 12px;
-  padding: 14px; transition: all 0.2s;
-}
-.badge { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
 
-.event-title { font-weight: 700; color: #1e293b; font-size: 0.95rem; margin-bottom: 2px; }
-.event-time { font-size: 0.8rem; color: #64748b; font-weight: 500; }
-.event-meta { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
-.event-desc { font-size: 0.8rem; color: #64748b; margin-top: 6px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.event-empty { text-align: center; padding: 32px; color: #94a3b8; font-style: italic; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1; }
+.event-empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 24px; text-align: center;
+  background: #f8fafc; border-radius: 20px; border: 2px dashed #e2e8f0;
+  color: #64748b; margin-top: 16px;
+}
+.empty-illustration {
+  color: #cbd5e1; margin-bottom: 16px;
+  background: #fff; padding: 20px; border-radius: 50%;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.03);
+}
+.empty-title { font-size: 1.1rem; font-weight: 700; color: #334155; margin: 0 0 8px; }
+.empty-desc { font-size: 0.9rem; color: #94a3b8; margin: 0; max-width: 250px; line-height: 1.5; }
+.primary-sm {
+  padding: 8px 16px; border-radius: 10px; border: none;
+  background: #6366f1; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+.primary-sm:hover { background: #4f46e5; transform: translateY(-1px); }
+.btn-create-empty {
+  padding: 8px 16px; border-radius: 10px; border: 1px solid #cbd5e1;
+  background: #fff; color: #475569; font-weight: 600; cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.2s;
+}
+.btn-create-empty:hover { border-color: #6366f1; color: #6366f1; background: #fefeff; }
 
 /* Form Styles */
 .create-card { max-width: 500px; }
@@ -715,5 +848,19 @@ export default {
 .form-error-banner {
   margin: 0 24px 16px; background: #fef2f2; color: #ef4444; padding: 12px 16px; border-radius: 8px;
   display: flex; align-items: center; gap: 10px; font-size: 0.9rem; border: 1px solid #fecaca;
+}
+
+.is-past {
+  opacity: 0.6;
+}
+.is-past .event-title,
+.is-past .event-time,
+.is-past .agenda-title,
+.is-past .agenda-time,
+.is-past .agenda-day {
+  text-decoration: line-through;
+}
+.is-past:hover {
+  opacity: 0.8;
 }
 </style>
