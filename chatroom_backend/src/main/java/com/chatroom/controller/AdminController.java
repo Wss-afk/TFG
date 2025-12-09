@@ -1,8 +1,10 @@
 package com.chatroom.controller;
 
 import com.chatroom.repository.MessageRepository;
+import com.chatroom.repository.EventRepository;
 import com.chatroom.entity.User;
 import com.chatroom.entity.Group;
+import com.chatroom.entity.Event;
 import com.chatroom.entity.Role;
 import com.chatroom.repository.UserRepository;
 import com.chatroom.repository.GroupRepository;
@@ -29,6 +31,9 @@ public class AdminController {
 
     @Autowired
     private MessageRepository messageRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
 
     @Autowired
     private SimpMessageSendingOperations messagingTemplate;
@@ -232,7 +237,19 @@ public class AdminController {
         // 2. Eliminar mensajes del usuario (enviados o recibidos)
         messageRepository.deleteAllByUserId(id);
 
-        // 3. Eliminar usuario
+        // 3. Limpiar eventos (responsable o creador)
+        List<Event> responsibleEvents = eventRepository.findByResponsibles_Id(id);
+        for (Event e : responsibleEvents) {
+            e.getResponsibles().removeIf(u -> u.getId().equals(id));
+            eventRepository.save(e);
+        }
+        List<Event> createdEvents = eventRepository.findByCreatedBy_Id(id);
+        for (Event e : createdEvents) {
+            e.setCreatedBy(null);
+            eventRepository.save(e);
+        }
+
+        // 4. Eliminar usuario
         userRepository.deleteById(id);
 
         auditService.logAdminAction(adminUserId, "USER_DELETE", "USER", id, opt.map(User::getUsername).orElse(null), true, 200,

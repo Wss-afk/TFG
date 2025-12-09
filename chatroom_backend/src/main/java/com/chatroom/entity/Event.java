@@ -26,21 +26,22 @@ public class Event {
     private String time; // Ej: "07:00 - 10:00" o "Todo el día"
 
     @Column(length = 20)
-    private String price; // Ej: "$5.0" (opcional)
-
-    @Column(length = 20)
     private String color; // color de marcador en calendario
 
     @Column(length = 255)
     private String description; // descripción opcional del evento
 
-    // Nuevo: identificador del creador del evento (usuario)
-    @Column(name = "created_by_id")
-    private Long createdById;
+    // Relación real con el usuario creador
+    @ManyToOne
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
 
-    // Nuevo: lista de responsables (ids de usuario) usando tabla intermedia sencilla
-    @ElementCollection
-    @CollectionTable(name = "event_responsible_ids", joinColumns = @JoinColumn(name = "event_id"))
-    @Column(name = "user_id")
-    private List<Long> responsibleIds = new ArrayList<>();
+    // Relación real con los responsables
+    @ManyToMany
+    @JoinTable(
+        name = "event_responsibles",
+        joinColumns = @JoinColumn(name = "event_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> responsibles = new ArrayList<>();
 }

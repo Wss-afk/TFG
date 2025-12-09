@@ -109,8 +109,20 @@
                   <div class="detail-row"><strong>Fecha:</strong> {{ (detailEvent && detailEvent.date) || '—' }}</div>
                   <div class="detail-row"><strong>Hora:</strong> {{ detailEvent.time || '—' }}</div>
                   <div class="detail-row"><strong>Descripción:</strong> {{ detailEvent.description || '—' }}</div>
-                  <div class="detail-row"><strong>Creador:</strong> {{ detailEvent.createdById ? usernameById(detailEvent.createdById) : '—' }}</div>
-                  <div class="detail-row"><strong>Responsables:</strong> {{ ((detailEvent.responsibleIds || detailEvent.assignedToIds) || []).length ? ((detailEvent.responsibleIds || detailEvent.assignedToIds).map(id => usernameById(id)).join(', ')) : '—' }}</div>
+                  <div class="detail-row">
+            <strong>Creador:</strong> 
+            {{ detailEvent.createdBy ? detailEvent.createdBy.username : (detailEvent.createdById ? usernameById(detailEvent.createdById) : '—') }}
+          </div>
+          <div class="detail-row">
+            <strong>Responsables:</strong>
+            <template v-if="detailEvent.responsibles && detailEvent.responsibles.length">
+              {{ detailEvent.responsibles.map(u => u.username).join(', ') }}
+            </template>
+            <template v-else-if="detailEvent.responsibleIds && detailEvent.responsibleIds.length">
+              {{ detailEvent.responsibleIds.map(id => usernameById(id)).join(', ') }}
+            </template>
+            <span v-else>—</span>
+          </div>
                 </div>
                 <div class="detail-actions">
                   <button class="danger" :disabled="deleting" @click="removeEvent">{{ deleting ? 'Eliminando…' : 'Eliminar' }}</button>
