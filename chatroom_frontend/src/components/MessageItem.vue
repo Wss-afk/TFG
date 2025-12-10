@@ -81,8 +81,8 @@ export default {
     },
     senderAvatarUrl() {
       const s = this.message && this.message.sender
-      if (s && typeof s === 'object') {
-        return s.avatarUrl || ''
+      if (s && typeof s === 'object' && s.avatarUrl) {
+        return s.avatarUrl
       }
       if (this.isMine && this.$store && this.$store.getters) {
         const cu = this.$store.getters['auth/currentUser']

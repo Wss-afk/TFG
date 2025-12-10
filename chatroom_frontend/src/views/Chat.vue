@@ -369,7 +369,7 @@ export default {
 
         if (this.chatType === 'user' && this.selectedUser) {
           const message = {
-            sender: { id: this.currentUser.id, username: this.currentUser.username },
+            sender: { id: this.currentUser.id, username: this.currentUser.username, avatarUrl: this.currentUser.avatarUrl },
             receiver: { id: this.selectedUser.id, username: this.selectedUser.username },
             content,
             type: 'text',
@@ -382,7 +382,7 @@ export default {
           this.lastMessageMap[this.selectedUser.id] = { content, timestamp: message.timestamp }
         } else if (this.chatType === 'group' && this.selectedGroup) {
           const message = {
-            sender: { id: this.currentUser.id, username: this.currentUser.username },
+            sender: { id: this.currentUser.id, username: this.currentUser.username, avatarUrl: this.currentUser.avatarUrl },
             group: { id: this.selectedGroup.id, name: this.selectedGroup.name },
             content,
             type: 'text',
@@ -414,7 +414,7 @@ export default {
         const { url, type } = res.data || {}
         if (!url || !type) return
         const baseMessage = {
-          sender: { id: this.currentUser.id, username: this.currentUser.username },
+          sender: { id: this.currentUser.id, username: this.currentUser.username, avatarUrl: this.currentUser.avatarUrl },
           content: file.name,
           type,
           fileUrl: url,
