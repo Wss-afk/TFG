@@ -68,9 +68,9 @@ export default {
         ]
       }
       return [
-        { label: 'Home', icon: '🏠', path: '/home' },
+        { label: 'Inicio', icon: '🏠', path: '/home' },
         { label: 'Eventos', icon: '📆', path: '/events' },
-        { label: 'Messages', icon: '📫', path: '/chat' }
+        { label: 'Mensajes', icon: '📫', path: '/chat' }
       ]
     }
   },

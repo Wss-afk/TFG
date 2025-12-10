@@ -31,7 +31,7 @@
         </select>
       </div>
       <div>
-        <label class="form-label">Target Type</label>
+        <label class="form-label">Tipo de objetivo</label>
         <select v-model="filters.targetType" class="form-select" style="max-width:160px">
           <option value="">Todos</option>
           <option value="USER">USER</option>
@@ -39,7 +39,7 @@
         </select>
       </div>
       <div>
-        <label class="form-label">Target ID</label>
+        <label class="form-label">ID de objetivo</label>
         <input v-model.number="filters.targetId" type="number" class="form-control" style="max-width:140px" />
       </div>
       <div>
@@ -73,7 +73,7 @@
                 <th style="width:180px">Fecha</th>
                 <th>Actor</th>
                 <th style="width:200px">Acción</th>
-                <th style="width:120px">Target</th>
+                <th style="width:120px">Objetivo</th>
                 <th>Nombre</th>
                 <th style="width:90px">Éxito</th>
                 <th>Detalles</th>

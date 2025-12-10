@@ -53,7 +53,7 @@
 
         <section class="tasks-card">
           <header class="card-header">
-            <div class="card-title">Today Task <span class="muted">({{ todayEvents.length }})</span></div>
+            <div class="card-title">Tareas de hoy <span class="muted">({{ todayEvents.length }})</span></div>
             <button class="add-btn" aria-label="Agregar" @click="openCreateForm"><Icon name="plus" :size="18" /></button>
           </header>
           <ul class="tasks-list gap8-1">
@@ -77,8 +77,8 @@
         <!-- Columna derecha: Notification + Team Chat -->
         <section class="notification-card">
           <header class="card-header">
-            <div class="card-title">Notification <span class="muted">({{ notifications.length }})</span></div>
-            <router-link to="/chat" class="view-all">View all</router-link>
+            <div class="card-title">Notificaciones <span class="muted">({{ notifications.length }})</span></div>
+            <router-link to="/chat" class="view-all">Ver todas</router-link>
           </header>
           <div class="notice empty-notice" v-if="notifications.length === 0">
             <div class="notice-content">
@@ -108,7 +108,7 @@
 
         <section class="quicknotes-card">
           <header class="card-header">
-            <div class="card-title">Quick Notes</div>
+            <div class="card-title">Notas rápidas</div>
             <div class="right-actions gap8-2">
               <span v-if="saveStatus" class="save-status">{{ saveStatus }}</span>
               <button class="action-btn save-btn" @click="saveNote" aria-label="Guardar" title="Guardar">
@@ -267,7 +267,7 @@ export default {
       todayDay: now.getDate(),
       todayMonth: month,
       todayYear: year,
-      weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      weekdays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
       leadingBlanks: Array(first.getDay()).fill(0),
       daysInMonth: Array.from({ length: last.getDate() }, (_, i) => i + 1),
       events: [],
@@ -291,7 +291,7 @@ export default {
   computed: {
     ...mapGetters('auth', ['currentUser']),
     monthLabel() {
-      const m = ['January','February','March','April','May','June','July','August','September','October','November','December'][this.month]
+      const m = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][this.month]
       return `${m}, ${this.year}`
     },
     todayISO() {

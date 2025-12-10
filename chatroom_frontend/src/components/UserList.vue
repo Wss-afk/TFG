@@ -96,7 +96,7 @@ export default {
       }
       const yesterday = new Date(now)
       yesterday.setDate(now.getDate() - 1)
-      if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
+      if (d.toDateString() === yesterday.toDateString()) return 'Ayer'
       return d.toLocaleDateString()
     },
     isUserOnline(user) {

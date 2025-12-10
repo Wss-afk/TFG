@@ -5,7 +5,7 @@
       <div v-if="toast" class="toast" :class="toastClass()">{{ toast.message }}</div>
       <header class="topbar">
         <div class="left">
-          <h1 class="topbar-title">Messages</h1>
+          <h1 class="topbar-title">Mensajes</h1>
         </div>
       </header>
       <div class="chat-body">
@@ -13,9 +13,9 @@
         
           <div class="chats-header">
             <nav class="chats-tabs" role="tablist" aria-label="Listado de chats">
-              <button :class="['tab', activeTab === 'all' && 'active']" role="tab" aria-selected="activeTab==='all'" @click="activeTab='all'">All chats</button>
-              <button :class="['tab', activeTab === 'contacts' && 'active']" role="tab" aria-selected="activeTab==='contacts'" @click="activeTab='contacts'">My Contacts</button>
-              <button :class="['tab', activeTab === 'groups' && 'active']" role="tab" aria-selected="activeTab==='groups'" @click="activeTab='groups'">Groups</button>
+              <button :class="['tab', activeTab === 'all' && 'active']" role="tab" aria-selected="activeTab==='all'" @click="activeTab='all'">Todos</button>
+              <button :class="['tab', activeTab === 'contacts' && 'active']" role="tab" aria-selected="activeTab==='contacts'" @click="activeTab='contacts'">Contactos</button>
+              <button :class="['tab', activeTab === 'groups' && 'active']" role="tab" aria-selected="activeTab==='groups'" @click="activeTab='groups'">Grupos</button>
             </nav>
           </div>
           <div class="chats-card">
@@ -119,9 +119,9 @@ export default {
     },
     activeTabLabel() {
       switch (this.activeTab) {
-        case 'contacts': return 'My Contacts';
-        case 'groups': return 'Groups';
-        default: return 'All chats';
+        case 'contacts': return 'Contactos';
+        case 'groups': return 'Grupos';
+        default: return 'Todos';
       }
     },
     filteredMessages() {
