@@ -483,11 +483,21 @@ export default {
       } finally {
         this.deleting = false
       }
+    },
+    handleKeydown(e) {
+      if (e.key === 'Escape') {
+        if (this.detailOpen) this.closeEventDetails()
+        if (this.createOpen) this.cancelCreate()
+      }
     }
   },
   async mounted() {
+    window.addEventListener('keydown', this.handleKeydown)
     await this.loadMonth()
     await this.loadUsers()
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeydown)
   },
   watch: {
     month() { this.loadMonth() },

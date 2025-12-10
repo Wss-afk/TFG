@@ -57,8 +57,11 @@
             <button class="add-btn" aria-label="Agregar" @click="openCreateForm"><Icon name="plus" :size="18" /></button>
           </header>
           <ul class="tasks-list gap8-1">
-            <li v-for="ev in todayEvents" :key="ev.id || ev.title" class="task-item">
-              <label><input type="checkbox"> {{ ev.title }}</label>
+            <li v-for="ev in todayEvents" :key="ev.id || ev.title" class="task-item clickable" @click="openTaskDetails(ev)">
+              <div class="task-info">
+                <span class="task-marker" :style="{ backgroundColor: ev.color || '#6366f1' }"></span>
+                <span class="task-title">{{ ev.title }}</span>
+              </div>
               <span class="time">{{ ev.time || 'Todo el día' }}</span>
             </li>
             <li v-if="todayEvents.length === 0" class="task-item empty-state">
@@ -182,6 +185,62 @@
         </footer>
       </div>
     </div>
+
+    <!-- Modal de Detalle de Evento -->
+    <div v-if="showDetailModal && selectedTask" class="modal-overlay" @click.self="closeTaskDetails">
+      <div class="modal-card detail-card-home">
+        <header class="modal-header" :style="{ borderLeft: `6px solid ${selectedTask.color || '#6366f1'}` }">
+          <div class="header-content">
+             <h3 class="modal-title">{{ selectedTask.title }}</h3>
+             <span class="modal-subtitle">{{ currentDateFull }}</span>
+          </div>
+          <button class="close-btn" @click="closeTaskDetails">×</button>
+        </header>
+        <div class="modal-body">
+          <div class="detail-row">
+            <div class="detail-icon"><Icon name="clock" :size="18" /></div>
+            <div class="detail-text">
+              <span class="label">Horario</span>
+              <span class="value">{{ selectedTask.time || 'Todo el día' }}</span>
+            </div>
+          </div>
+          
+          <div class="detail-row" v-if="selectedTask.description">
+            <div class="detail-icon"><Icon name="file-text" :size="18" /></div>
+            <div class="detail-text">
+              <span class="label">Descripción</span>
+              <span class="value description">{{ selectedTask.description }}</span>
+            </div>
+          </div>
+
+          <div class="detail-row">
+             <div class="detail-icon"><Icon name="user" :size="18" /></div>
+             <div class="detail-text">
+               <span class="label">Creado por</span>
+               <span class="value">{{ selectedTask.createdBy ? selectedTask.createdBy.username : (selectedTask.createdById ? usernameById(selectedTask.createdById) : '—') }}</span>
+             </div>
+          </div>
+
+          <div class="detail-row" v-if="(selectedTask.responsibles && selectedTask.responsibles.length) || (selectedTask.responsibleIds && selectedTask.responsibleIds.length)">
+             <div class="detail-icon"><Icon name="users" :size="18" /></div>
+             <div class="detail-text">
+               <span class="label">Responsables</span>
+               <div class="responsibles-list">
+                 <template v-if="selectedTask.responsibles && selectedTask.responsibles.length">
+                    <span v-for="u in selectedTask.responsibles" :key="u.id" class="responsible-badge">{{ u.username }}</span>
+                 </template>
+                 <template v-else>
+                    <span v-for="id in selectedTask.responsibleIds" :key="id" class="responsible-badge">{{ usernameById(id) }}</span>
+                 </template>
+               </div>
+             </div>
+          </div>
+        </div>
+        <footer class="modal-footer">
+          <button class="btn-primary" @click="closeTaskDetails">Cerrar</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -223,7 +282,10 @@ export default {
       showCreateModal: false,
       createError: '',
       newEvent: { title: '', description: '', time: '', color: '#6366f1', assignedToIds: [], startHour: null, endHour: null },
-      users: []
+      users: [],
+      // Task Details
+      showDetailModal: false,
+      selectedTask: null
     }
   },
   computed: {
@@ -236,7 +298,27 @@ export default {
       return this.toISO(this.todayYear, this.todayMonth, this.todayDay)
     },
     todayEvents() {
-      return this.events.filter(e => (e.date || '') === this.todayISO)
+      const uid = this.currentUser?.id
+      if (!uid) return []
+      return this.events.filter(e => {
+        const isToday = (e.date || '') === this.todayISO
+        if (!isToday) return false
+        
+        // Filtrar por asignación: mostrar solo si el usuario actual está asignado
+        const assignedIds = (e.responsibleIds || []).map(String)
+        const assignedObjs = (e.responsibles || []).map(u => String(u.id))
+        
+        // Combinar ambas listas de IDs por seguridad
+        const allAssigned = [...new Set([...assignedIds, ...assignedObjs])]
+        
+        // Si no hay responsables, ¿se muestra? 
+        // Según la petición "solo aparecen para los que estan asignado", 
+        // si nadie está asignado, nadie lo ve en Today Task (pero sí en calendario).
+        // Si queremos que el creador lo vea por defecto si no hay asignados, descomentar:
+        // if (allAssigned.length === 0) return String(e.createdById) === String(uid)
+        
+        return allAssigned.includes(String(uid))
+      })
     },
     greetingText() {
       const h = new Date().getHours()
@@ -270,6 +352,14 @@ export default {
       this.showCreateModal = false
       this.createError = ''
       this.newEvent = { title: '', description: '', time: '', color: '#6366f1', assignedToIds: [], startHour: null, endHour: null }
+    },
+    openTaskDetails(task) {
+      this.selectedTask = task
+      this.showDetailModal = true
+    },
+    closeTaskDetails() {
+      this.showDetailModal = false
+      this.selectedTask = null
     },
     pad2(n) { return String(n).padStart(2,'0') },
     async loadUsers() {
@@ -501,9 +591,16 @@ export default {
       }
       // Navegar a chat para ver el mensaje
       this.$router.push('/chat')
+    },
+    handleKeydown(e) {
+      if (e.key === 'Escape') {
+        if (this.showDetailModal) this.closeTaskDetails()
+        if (this.showCreateModal) this.cancelCreate()
+      }
     }
   },
   async mounted() {
+    window.addEventListener('keydown', this.handleKeydown)
     if (this.currentUser && this.currentUser.id) {
       this.quickNote = localStorage.getItem(`user_quick_note_${this.currentUser.id}`) || ''
     }
@@ -521,6 +618,7 @@ export default {
     }
   },
   beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeydown)
     try {
       if (this.globalSubscription) this.globalSubscription.unsubscribe()
       Object.values(this.groupSubscriptions).forEach(s => s && s.unsubscribe())
@@ -829,4 +927,35 @@ export default {
   background: var(--brand-gradient-start); border: none; color: #fff; padding: 8px 20px;
   border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 10px rgba(37,99,235,0.3);
 }
-.btn-primary:hover { background: var(--brand-gradient-end); transform: translateY(-1px); }</style>
+.btn-primary:hover { background: var(--brand-gradient-end); transform: translateY(-1px); }
+
+/* Task Item Clickable */
+.task-item.clickable {
+  cursor: pointer;
+}
+.task-info { display: flex; align-items: center; gap: 10px; flex: 1; }
+.task-marker { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.task-title { font-weight: 600; color: #334155; font-size: 0.95rem; line-height: 1.4; }
+
+/* Detail Modal Styles */
+.detail-card-home .modal-header { background: #fff; padding: 20px 24px; }
+.detail-card-home .header-content { display: flex; flex-direction: column; gap: 4px; }
+.detail-card-home .modal-subtitle { font-size: 0.85rem; color: #94a3b8; font-weight: 600; text-transform: capitalize; }
+
+.detail-row { display: flex; gap: 16px; margin-bottom: 8px; }
+.detail-icon {
+  width: 36px; height: 36px; background: #f8fafc; color: #64748b;
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.detail-text { display: flex; flex-direction: column; gap: 4px; flex: 1; justify-content: center; }
+.detail-text .label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-text .value { font-size: 0.95rem; color: #334155; font-weight: 500; }
+.detail-text .value.description { line-height: 1.5; color: #475569; }
+
+.responsibles-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.responsible-badge {
+  background: #f1f5f9; color: #475569; font-size: 0.8rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
+}
+</style>
