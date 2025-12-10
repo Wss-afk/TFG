@@ -16,7 +16,7 @@
     </div>
     <ul class="menu">
       <li v-for="item in items" :key="item.label" :class="['menu-item', isActive(item.path) && 'active']" @click="go(item.path)" :aria-label="item.label">
-        <span class="icon" aria-hidden="true">{{ item.icon }}</span>
+        <Icon :name="item.icon" :size="24" class="menu-icon" />
         <span class="label">{{ item.label }}</span>
       </li>
     </ul>
@@ -53,8 +53,10 @@ import { mapGetters } from 'vuex'
 import { disconnectWebSocket } from '../services/websocket.js'
 import { uploadAvatar } from '../services/chat.service.js'
 import { updateAvatar } from '../services/user.service.js'
+import Icon from './Icon.vue'
 export default {
   name: 'AppDock',
+  components: { Icon },
   data() {
     return { avatarPreviewOpen: false }
   },
@@ -64,13 +66,13 @@ export default {
       // Si es SUPER_ADMIN, limitar el dock al panel de admin
       if (this.currentUser && this.currentUser.role === 'SUPER_ADMIN') {
         return [
-          { label: 'Admin', icon: '🛡️', path: '/admin' }
+          { label: 'Admin', icon: 'shield', path: '/admin' }
         ]
       }
       return [
-        { label: 'Inicio', icon: '🏠', path: '/home' },
-        { label: 'Eventos', icon: '📆', path: '/events' },
-        { label: 'Mensajes', icon: '📫', path: '/chat' }
+        { label: 'Inicio', icon: 'home', path: '/home' },
+        { label: 'Eventos', icon: 'calendar', path: '/events' },
+        { label: 'Mensajes', icon: 'message-square', path: '/chat' }
       ]
     }
   },

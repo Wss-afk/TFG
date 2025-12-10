@@ -26,7 +26,6 @@
           @input="onInputSearch"
           @keyup.enter="$emit('search', localSearch)"
         />
-        <button class="icon-btn" title="Opciones" @click="$emit('menu')">⋮</button>
       </div>
     </div>
     <div class="chat-topbar" v-else-if="chatGroup && chatType === 'group'">
@@ -47,7 +46,6 @@
           @input="onInputSearch"
           @keyup.enter="$emit('search', localSearch)"
         />
-        <button class="icon-btn" title="Opciones" @click="$emit('menu')">⋮</button>
       </div>
     </div>
     <div v-if="chatGroup && chatType === 'group'" class="group-members-bar">
