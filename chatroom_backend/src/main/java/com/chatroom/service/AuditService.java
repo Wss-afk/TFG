@@ -69,6 +69,10 @@ public class AuditService {
         return auditLogRepository.save(log);
     }
 
+    public void clearAllLogs() {
+        auditLogRepository.deleteAll();
+    }
+
     public Specification<AuditLog> buildSpec(Instant from,
                                               Instant to,
                                               Long actorId,

@@ -36,14 +36,17 @@ public class UploadController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file,
+                                    @RequestParam(value = "kind", required = false) String kindOverride) {
         if (file == null || file.isEmpty()) {
             return ResponseEntity.badRequest().body("Archivo vacío");
         }
         try {
             String contentType = file.getContentType() != null ? file.getContentType() : "application/octet-stream";
             boolean isImage = contentType.startsWith("image/");
-            String kind = isImage ? "images" : "files";
+            String kind = (kindOverride != null && !kindOverride.isBlank())
+                    ? kindOverride
+                    : (isImage ? "images" : "files");
 
             String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
             String ext = "";
@@ -54,14 +57,18 @@ public class UploadController {
             String uuid = UUID.randomUUID().toString().replace("-", "");
             String filename = uuid + ext;
 
-            Path targetDir = baseDir().resolve("messages").resolve(kind);
+            Path targetDir = "avatar".equalsIgnoreCase(kind)
+                    ? baseDir().resolve("avatars")
+                    : baseDir().resolve("messages").resolve(kind);
             Files.createDirectories(targetDir);
             Path targetPath = targetDir.resolve(filename);
             try (InputStream in = file.getInputStream()) {
                 Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            String url = "/uploads/messages/" + kind + "/" + filename;
+            String url = "avatar".equalsIgnoreCase(kind)
+                    ? "/uploads/avatars/" + filename
+                    : "/uploads/messages/" + kind + "/" + filename;
             Map<String, Object> body = new HashMap<>();
             body.put("url", url);
             body.put("type", isImage ? "image" : "file");

@@ -8,10 +8,18 @@ import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
+
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByReceiver(User receiver);
 
     List<Message> findByGroup(Group group);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Message m WHERE m.sender.id = :userId OR m.receiver.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
 
     @Query("SELECT m FROM Message m WHERE (m.group.id = :groupId OR m.receiver.id = :receiverId)")
     List<Message> findByGroupIdOrReceiverId(@Param("groupId") Long groupId, @Param("receiverId") Long receiverId);
@@ -24,4 +32,18 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT COUNT(m) FROM Message m WHERE m.receiver.id = :userId AND m.sender.id = :senderId AND m.isRead = false")
     int countUnreadMessages(@Param("userId") Long userId, @Param("senderId") Long senderId);
+
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.group.id = :groupId AND m.id > :lastReadMessageId AND m.sender.id <> :userId")
+    int countGroupUnreadMessages(@Param("groupId") Long groupId, @Param("lastReadMessageId") Long lastReadMessageId, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.group.id = :groupId")
+    int countGroupMessages(@Param("groupId") Long groupId);
+    
+    @Query("SELECT MAX(m.id) FROM Message m WHERE m.group.id = :groupId")
+    Long findLastMessageIdInGroup(@Param("groupId") Long groupId);
+
+    List<Message> findByReceiverIdAndIsReadFalse(Long receiverId);
+
+    @Query("SELECT m FROM Message m WHERE m.group.id = :groupId AND m.id > :lastReadMessageId AND m.sender.id <> :userId")
+    List<Message> findGroupUnreadMessages(@Param("groupId") Long groupId, @Param("lastReadMessageId") Long lastReadMessageId, @Param("userId") Long userId);
 }

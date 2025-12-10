@@ -38,10 +38,6 @@
           <span v-html="highlightedContent"></span>
         </template>
       </div>
-      <div class="actions" aria-hidden="true">
-        <span class="action-btn" title="Añadir reacción">🙂</span>
-        <Icon name="reply" :size="16" />
-      </div>
       <span class="timestamp">
         {{ formattedTime }}
         <span v-if="isMine && deliveryStatus" class="status-icon" :title="deliveryStatus.label">{{ deliveryStatus.icon }}</span>
@@ -85,8 +81,8 @@ export default {
     },
     senderAvatarUrl() {
       const s = this.message && this.message.sender
-      if (s && typeof s === 'object') {
-        return s.avatarUrl || ''
+      if (s && typeof s === 'object' && s.avatarUrl) {
+        return s.avatarUrl
       }
       if (this.isMine && this.$store && this.$store.getters) {
         const cu = this.$store.getters['auth/currentUser']
@@ -141,181 +137,212 @@ export default {
 </script>
 
 <style scoped>
-.message-row { display: flex; align-items: flex-end; gap: var(--space-2); margin-bottom: var(--space-2); }
-.message-row.mine { flex-direction: row-reverse; justify-content: flex-start; }
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding: 0 var(--space-2);
+}
 
-.avatar { width: 36px; height: 36px; border-radius: 50%; background: #e2e8f0; color: #1f2937; display: flex; align-items: center; justify-content: center; font-weight: 700; box-shadow: var(--shadow-1); flex: 0 0 36px; overflow: hidden; }
-.avatar.mine { background: linear-gradient(135deg, var(--color-secondary), #2563eb); color: #fff; }
-.avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 0 0 2px #fff; }
-.avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.message-row.mine {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: var(--shadow-1);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.avatar:hover {
+  transform: scale(1.05);
+}
+
+.avatar.mine {
+  background: linear-gradient(135deg, var(--color-secondary), #2563eb);
+  color: #fff;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .message-item {
-  margin-bottom: var(--space-3);
-  padding: 12px 16px;
-  border-radius: 16px;
-  max-width: min(80%, 72ch);
-  display: inline-block;
   position: relative;
+  padding: 8px 12px;
+  border-radius: 18px;
+  max-width: min(75%, 600px);
+  display: flex;
+  flex-direction: column;
   word-wrap: break-word;
-  animation: messageSlideIn 0.3s ease-out;
+  animation: messageSlideIn 0.2s ease-out;
+  box-shadow: var(--shadow-1);
   transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
 @keyframes messageSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-.message-item:hover { transform: translateY(-1px); }
 
 .message-item.mine {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: var(--color-primary-contrast);
-  text-align: left;
-  box-shadow: var(--shadow-2);
+  border-bottom-right-radius: 4px;
+  margin-right: 4px;
 }
-
-/* sin colas: estilo pill */
 
 .message-item:not(.mine) {
   background: var(--color-surface);
   color: var(--text-primary);
-  text-align: left;
-  box-shadow: var(--shadow-1);
-  border: 1px solid var(--border-color);
+  border-color: var(--border-color);
+  border-bottom-left-radius: 4px;
+  margin-left: 4px;
 }
 
-/* sin colas: estilo pill */
-
-.sender { display: none; }
-
-/* remitente oculto para aproximar al mockup */
+.sender {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  color: var(--color-primary);
+  opacity: 0.9;
+  margin-left: 2px;
+}
+.message-item.mine .sender { display: none; }
 
 .content {
-  word-break: break-word;
-  line-height: 1.4;
+  line-height: 1.5;
   font-size: var(--font-size-md);
+  position: relative;
+  z-index: 1;
 }
 
-.highlight {
-  background: #fff59a;
-  color: inherit;
-  border-radius: 2px;
-  padding: 0 1px;
+/* Ajustes de timestamp para que fluya mejor */
+.timestamp {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  margin-top: 2px;
+  opacity: 0.7;
+  user-select: none;
+  line-height: 1;
 }
 
+.message-item.mine .timestamp {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.message-item:not(.mine) .timestamp {
+  color: var(--text-muted);
+}
+
+.status-icon {
+  font-size: 12px;
+}
+
+/* Images & Files */
 .attachment-image {
-  max-width: 220px;
-  max-height: 220px;
+  max-width: 100%;
+  max-height: 300px;
   border-radius: 12px;
   display: block;
+  cursor: zoom-in;
+  margin-bottom: 4px;
 }
 
 .attachment-file {
-  color: #2b6cb0;
-  text-decoration: none;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.attachment-file:hover { text-decoration: underline; }
-
-.caption {
-  margin-top: 6px;
-  font-size: 13px;
-  opacity: 0.85;
-}
-
-.message-item.mine .timestamp { color: rgba(255, 255, 255, 0.85); }
-.message-item:not(.mine) .timestamp { color: var(--color-text-muted); }
-
-.message-item.mine .attachment-file { color: #fff; }
-.message-item.mine .caption { color: rgba(255,255,255,0.9); }
-
-.timestamp {
-  position: static;
+  background: rgba(0,0,0,0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
   display: flex;
-  gap: 6px;
   align-items: center;
-  margin-top: 6px;
-  font-size: var(--font-size-sm);
-  opacity: 0.75;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
   font-weight: 500;
+  transition: background 0.2s;
 }
-.status-icon {
-  font-size: 11px;
-  opacity: 0.85;
+.message-item.mine .attachment-file {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+.attachment-file:hover {
+  background: rgba(0,0,0,0.1);
+}
+.message-item.mine .attachment-file:hover {
+  background: rgba(255,255,255,0.25);
 }
 
-/* Agrupación visual de mensajes consecutivos */
-.message-row.continuation .avatar { visibility: hidden; width: 0; height: 0; margin: 0; }
-.message-row.continuation .message-item { margin-top: 2px; border-top-left-radius: 10px; border-top-right-radius: 10px; }
-.message-row.mine.continuation .message-item { border-top-right-radius: 10px; }
-
-/* Barra de acciones (reacciones / responder) */
-.message-item:hover .actions { opacity: 1; pointer-events: auto; }
-.actions {
-  position: absolute;
-  top: -18px;
-  right: 6px;
-  display: inline-flex;
-  gap: 6px;
-  background: var(--color-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 9999px;
-  padding: 2px 6px;
-  box-shadow: var(--shadow-1);
-  opacity: 0;
-  transition: opacity .15s ease;
+/* Continuation Logic */
+.message-row.continuation {
+  margin-top: -4px; /* Acercar mensajes continuos */
+  margin-bottom: var(--space-2);
 }
-.action-btn { cursor: pointer; font-size: 14px; line-height: 1; }
+.message-row.continuation .avatar {
+  visibility: hidden;
+  height: 0; /* Evitar hueco vertical si se ocultara solo visibility */
+}
 
-/* 响应式设计 */
+.message-row.continuation .message-item.mine {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+.message-row.continuation:last-child .message-item.mine {
+  border-bottom-right-radius: 4px; /* Mantener la cola en el último? */
+}
+/* Lógica simplificada para bordes en continuación */
+.message-row.continuation .message-item {
+  border-radius: 18px; /* Reset */
+  margin-top: 2px;
+}
+.message-row.continuation .message-item.mine {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+.message-row.continuation .message-item:not(.mine) {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+/* Highlight */
+.highlight {
+  background: #fef08a;
+  color: #000;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .message-item {
     max-width: 85%;
-    padding: 10px 14px 18px 14px;
-    margin-bottom: 12px;
-    border-radius: 16px;
+    font-size: 15px;
   }
-  
-  .sender { display: none; }
-  
-  .content {
-    font-size: 14px;
-    line-height: 1.3;
+  .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
-  
-  .timestamp { font-size: 11px; }
-}
-
-@media (max-width: 480px) {
-  .message-item {
-    max-width: 90%;
-    padding: 8px 12px 16px 12px;
-    margin-bottom: 10px;
-    border-radius: 14px;
-  }
-  
-  .sender { display: none; }
-  
-  .content {
-    font-size: 13px;
-    line-height: 1.25;
-    margin: 2px 0;
-  }
-  
-  .timestamp { font-size: 10px; }
-  
-  .message-item:hover {
-    transform: none; /* 移动设备上禁用hover效果 */
+  .actions {
+    display: none !important; /* Ocultar acciones flotantes en móvil, usar long-press o menú en el futuro */
   }
 }
 </style>

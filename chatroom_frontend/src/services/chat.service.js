@@ -19,10 +19,34 @@ export function getUnreadCount(userId, senderId) {
   })
 }
 
+export function getGroupUnreadCounts(userId) {
+  return axios.get(API_URL + 'group/unread-counts', {
+    params: { userId }
+  })
+}
+
+export function markGroupMessagesAsRead(userId, groupId) {
+  return axios.post(API_URL + 'group/mark-read', null, {
+    params: { userId, groupId }
+  })
+}
+
+export function fetchNotifications(userId) {
+  return axios.get(API_URL + 'notifications', { params: { userId } })
+}
+
 export function uploadAttachment(file) {
   const formData = new FormData()
   formData.append('file', file)
   return axios.post(API_URL + 'upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export function uploadAvatar(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return axios.post(API_URL + 'upload?kind=avatar', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }

@@ -16,6 +16,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import java.util.Map;
+import java.util.HashMap;
+
+import java.util.ArrayList;
+
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
@@ -27,6 +32,39 @@ public class ChatController {
     private UserRepository userRepository;
     @Autowired
     private GroupRepository groupRepository;
+    @Autowired
+    private com.chatroom.repository.GroupReadStatusRepository groupReadStatusRepository;
+
+    @GetMapping("/notifications")
+    public ResponseEntity<List<Message>> getNotifications(@RequestParam Long userId) {
+        try {
+            List<Message> notifications = new ArrayList<>();
+            
+            // 1. Direct Messages
+            List<Message> directMessages = messageRepository.findByReceiverIdAndIsReadFalse(userId);
+            notifications.addAll(directMessages);
+            
+            // 2. Group Messages
+            List<Group> allGroups = groupRepository.findAll();
+            for (Group g : allGroups) {
+                if (g.getUsers() != null && g.getUsers().stream().anyMatch(u -> u.getId().equals(userId))) {
+                    Optional<com.chatroom.entity.GroupReadStatus> statusOpt = groupReadStatusRepository.findByUserIdAndGroupId(userId, g.getId());
+                    Long lastReadId = statusOpt.map(com.chatroom.entity.GroupReadStatus::getLastReadMessageId).orElse(0L);
+                    
+                    List<Message> groupMessages = messageRepository.findGroupUnreadMessages(g.getId(), lastReadId, userId);
+                    notifications.addAll(groupMessages);
+                }
+            }
+            
+            // Sort by timestamp desc
+            notifications.sort((m1, m2) -> m2.getTimestamp().compareTo(m1.getTimestamp()));
+            
+            return ResponseEntity.ok(notifications);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(List.of());
+        }
+    }
 
     @MessageMapping("/chat/single")
     public void sendSingleMessage(@Payload Message message) {
@@ -218,6 +256,68 @@ public class ChatController {
             return ResponseEntity.ok(count);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(-1);
+        }
+    }
+
+    @GetMapping("/group/unread-counts")
+    public ResponseEntity<Map<Long, Integer>> getGroupUnreadCounts(@RequestParam Long userId) {
+        try {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.ok(new HashMap<>());
+            }
+            // Iterate all groups to check membership (simple approach)
+            List<Group> allGroups = groupRepository.findAll();
+            Map<Long, Integer> counts = new HashMap<>();
+            
+            for (Group g : allGroups) {
+                if (g.getUsers() != null && g.getUsers().stream().anyMatch(u -> u.getId().equals(userId))) {
+                    // User is member
+                    Optional<com.chatroom.entity.GroupReadStatus> statusOpt = groupReadStatusRepository.findByUserIdAndGroupId(userId, g.getId());
+                    Long lastReadId = statusOpt.map(com.chatroom.entity.GroupReadStatus::getLastReadMessageId).orElse(0L);
+                    
+                    int count = messageRepository.countGroupUnreadMessages(g.getId(), lastReadId, userId);
+                    counts.put(g.getId(), count);
+                }
+            }
+            return ResponseEntity.ok(counts);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(new HashMap<>());
+        }
+    }
+
+    @PostMapping("/group/mark-read")
+    public ResponseEntity<String> markGroupMessagesAsRead(@RequestParam Long userId, @RequestParam Long groupId) {
+        try {
+            // Check if user is member
+            Optional<Group> groupOpt = groupRepository.findById(groupId);
+            if (groupOpt.isEmpty()) return ResponseEntity.badRequest().body("Group not found");
+            Group g = groupOpt.get();
+            if (g.getUsers().stream().noneMatch(u -> u.getId().equals(userId))) {
+                return ResponseEntity.badRequest().body("User not in group");
+            }
+            
+            // Find last message ID
+            Long lastMsgId = messageRepository.findLastMessageIdInGroup(groupId);
+            if (lastMsgId == null) lastMsgId = 0L;
+            
+            Optional<com.chatroom.entity.GroupReadStatus> statusOpt = groupReadStatusRepository.findByUserIdAndGroupId(userId, groupId);
+            com.chatroom.entity.GroupReadStatus status;
+            if (statusOpt.isPresent()) {
+                status = statusOpt.get();
+            } else {
+                status = new com.chatroom.entity.GroupReadStatus();
+                status.setUserId(userId);
+                status.setGroupId(groupId);
+            }
+            status.setLastReadMessageId(lastMsgId);
+            groupReadStatusRepository.save(status);
+            
+            return ResponseEntity.ok("Marked as read");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error");
         }
     }
 }

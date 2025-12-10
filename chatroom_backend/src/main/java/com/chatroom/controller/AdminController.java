@@ -1,7 +1,10 @@
 package com.chatroom.controller;
 
+import com.chatroom.repository.MessageRepository;
+import com.chatroom.repository.EventRepository;
 import com.chatroom.entity.User;
 import com.chatroom.entity.Group;
+import com.chatroom.entity.Event;
 import com.chatroom.entity.Role;
 import com.chatroom.repository.UserRepository;
 import com.chatroom.repository.GroupRepository;
@@ -25,6 +28,12 @@ public class AdminController {
 
     @Autowired
     private GroupRepository groupRepository;
+
+    @Autowired
+    private MessageRepository messageRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
 
     @Autowired
     private SimpMessageSendingOperations messagingTemplate;
@@ -128,12 +137,27 @@ public class AdminController {
             }
             u.setUsername(newUsernameTrimmed);
         }
-        if (update.getAvatarUrl() != null) u.setAvatarUrl(update.getAvatarUrl());
+        if (update.getAvatarUrl() != null) {
+            // Empty string indicates removal of avatar
+            u.setAvatarUrl(update.getAvatarUrl().isEmpty() ? null : update.getAvatarUrl());
+        }
         if (update.getRole() != null) u.setRole(update.getRole());
         // Permitir cambiar habilitación para usuarios no SUPER_ADMIN
         boolean wasEnabled = Boolean.TRUE.equals(u.isEnabled());
         u.setEnabled(update.isEnabled());
         User saved = userRepository.save(u);
+
+        // Notificar actualización de perfil a todos los clientes para refrescar avatares
+        try {
+            Map<String, Object> updateMsg = new HashMap<>();
+            updateMsg.put("action", "user_updated");
+            updateMsg.put("userId", saved.getId());
+            updateMsg.put("username", saved.getUsername());
+            updateMsg.put("avatarUrl", saved.getAvatarUrl());
+            messagingTemplate.convertAndSend("/topic/public", updateMsg);
+        } catch (Exception e) {
+            // best-effort
+        }
 
         // Si se deshabilita un usuario que estaba habilitado, avisar al cliente para que desconecte
         if (wasEnabled && !Boolean.TRUE.equals(saved.isEnabled())) {
@@ -202,7 +226,32 @@ public class AdminController {
         if (opt.isPresent() && opt.get().getRole() == Role.SUPER_ADMIN) {
             return ResponseEntity.badRequest().body("Cannot delete SUPER_ADMIN");
         }
+
+        // 1. Remover usuario de todos los grupos
+        List<Group> userGroups = groupRepository.findByUsers_Id(id);
+        for (Group g : userGroups) {
+            g.getUsers().removeIf(u -> u.getId().equals(id));
+            groupRepository.save(g);
+        }
+
+        // 2. Eliminar mensajes del usuario (enviados o recibidos)
+        messageRepository.deleteAllByUserId(id);
+
+        // 3. Limpiar eventos (responsable o creador)
+        List<Event> responsibleEvents = eventRepository.findByResponsibles_Id(id);
+        for (Event e : responsibleEvents) {
+            e.getResponsibles().removeIf(u -> u.getId().equals(id));
+            eventRepository.save(e);
+        }
+        List<Event> createdEvents = eventRepository.findByCreatedBy_Id(id);
+        for (Event e : createdEvents) {
+            e.setCreatedBy(null);
+            eventRepository.save(e);
+        }
+
+        // 4. Eliminar usuario
         userRepository.deleteById(id);
+
         auditService.logAdminAction(adminUserId, "USER_DELETE", "USER", id, opt.map(User::getUsername).orElse(null), true, 200,
                 Map.of(), null, null);
         return ResponseEntity.ok().build();

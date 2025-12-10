@@ -24,7 +24,6 @@
         />
         <button type="submit">Entrar</button>
       </form>
-      <p class="login-footer">¿No tienes cuenta? <router-link to="/register">Regístrate</router-link></p>
     </div>
   </div>
 </template>

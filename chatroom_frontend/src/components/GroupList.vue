@@ -32,11 +32,13 @@
           <div class="avatar group-avatar" :title="group.name" role="img" :aria-label="'Grupo ' + group.name">{{ initials(group.name) }}</div>
         </div>
         <div class="info">
-          <div class="name">{{ group.name }}</div>
-          <div class="sub">{{ group.users ? group.users.length : 0 }} miembros</div>
-        </div>
-        <div class="meta">
-          <span v-if="groupUnreadCounts[group.id] > 0" class="unread">{{ groupUnreadCounts[group.id] }}</span>
+          <div class="top">
+            <div class="name">{{ group.name }}</div>
+          </div>
+          <div class="bottom">
+            <div class="sub">{{ group.users ? group.users.length : 0 }} miembros</div>
+            <span v-if="groupUnreadCounts[group.id] > 0" class="unread">{{ groupUnreadCounts[group.id] }}</span>
+          </div>
         </div>
       </li>
     </transition-group>
@@ -76,7 +78,6 @@ export default {
 
 .row {
   padding: 12px 16px;
-  padding-right: 36px; /* espacio para el contador a la derecha */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -104,19 +105,21 @@ export default {
 .avatar-wrap { width: 30px; height: 30px; }
 .avatar.group-avatar { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; background: linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end)); color: #fff; box-shadow: var(--shadow-1); }
 
-.info { flex: 1; min-width: 0; }
+.info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
 .name { font-weight: 600; color: #334155; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease; }
-.sub { font-size: 12px; color: #64748b; transition: color .15s ease; }
+.sub { font-size: 13px; color: #64748b; transition: color .15s ease; flex: 1; }
 .row:hover .name { color: var(--brand-gradient-start); }
 .row:hover .sub { color: #4b5563; }
 
-.meta { position: absolute; right: 12px; top: 12px; transform: none; display: flex; align-items: center; gap: 8px; z-index: 1; }
-.unread { background: #ef4444; color: #fff; border-radius: 9999px; min-width: 18px; height: 18px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; animation: badgePulse 1.4s ease-in-out infinite; }
+.unread { background: #ef4444; color: #fff; border-radius: 9999px; min-width: 20px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; animation: badgePulse 1.4s ease-in-out infinite; box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4); }
 
 @media (max-width: 768px) {
-  .row { padding: 10px 14px; padding-right: 34px; }
+  .row { padding: 10px 14px; }
   .name { font-size: 13px; }
-  .unread { min-width: 16px; height: 16px; font-size: 10px; }
+  .unread { min-width: 18px; height: 18px; font-size: 10px; }
 }
 
 @media (max-width: 480px) {
