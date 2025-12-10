@@ -713,12 +713,12 @@ export default {
   flex: 1; height: 100%;
   display: flex; /* Asegurar display flex para align-items */
   justify-content: center; flex-direction: column; gap: 12px;
-  padding: 40px 20px; color: #94a3b8; background: #f8fafc;
-  border-radius: 16px; border: 2px dashed #e2e8f0;
+  padding: 40px 20px; color: #94a3b8; background: transparent;
+  border: none;
   transition: all 0.2s;
   align-items: center; /* Centrado horizontal del contenido flex */
 }
-.empty-state:hover { border-color: #cbd5e1; background: #f1f5f9; }
+.empty-state:hover { background: transparent; }
 .empty-icon { color: #cbd5e1; margin-bottom: 4px; }
 .empty-text { text-align: center; display: flex; flex-direction: column; gap: 4px; }
 .empty-text .strong { font-weight: 700; color: #475569; font-size: 1rem; }
@@ -726,9 +726,9 @@ export default {
 
 .notice.empty-notice {
   flex: 1; height: 100%;
-  background: #f8fafc; border: 2px dashed #e2e8f0;
+  background: transparent; border: none;
   display: flex; align-items: center; justify-content: center;
-  border-radius: 16px; padding: 40px 20px;
+  padding: 40px 20px;
   color: #64748b; box-shadow: none;
 }
 .notice-content { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; }
