@@ -199,7 +199,7 @@ export default {
         const { fetchMessages, markMessagesAsRead } = await import('../services/chat.service.js')
         const res = await fetchMessages({ receiverId: user.id, userId: this.currentUser && this.currentUser.id })
         const sorted = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-        this.messages = sorted.map(m => this.enrichMessageWithUserData(m))
+        this.messages = sorted
         const last = sorted[sorted.length - 1]
         if (last) {
           this.lastMessageMap[user.id] = { content: last.content, timestamp: last.timestamp }
@@ -220,7 +220,6 @@ export default {
       }
     },
     handleNewMessage(message) {
-      message = this.enrichMessageWithUserData(message)
       // Resolver senderId, compatible con diferentes estructuras
       const senderId = (message && message.sender && (message.sender.id ?? message.sender.userId)) || message.senderId
       const isFromSelf = senderId && this.currentUser && senderId === this.currentUser.id
@@ -341,7 +340,7 @@ export default {
         const { fetchMessages, markGroupMessagesAsRead } = await import('../services/chat.service.js')
         const meId = this.currentUser && this.currentUser.id
         const res = await fetchMessages({ groupId: group.id, userId: meId })
-        this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)).map(m => this.enrichMessageWithUserData(m))
+        this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
         
         // Suscribirse a mensajes del grupo
         this.subscribeToGroupChannel(group.id)
@@ -456,7 +455,6 @@ export default {
       
       this.groupSubscriptions[groupId] = subscribe(topic, (msg) => {
         console.log('Mensaje de grupo recibido:', msg)
-        msg = this.enrichMessageWithUserData(msg)
         const msgGroupId = (msg && msg.group && msg.group.id) || groupId
         const isCurrentGroup = this.chatType === 'group' && this.selectedGroup && msg.group && msg.group.id === this.selectedGroup.id
         
@@ -531,7 +529,6 @@ export default {
         console.log('Suscripción al canal de mensajes:', topic)
         this.globalSubscription = subscribe(topic, (msg) => {
           console.log('Nuevo mensaje recibido:', msg)
-          msg = this.enrichMessageWithUserData(msg)
           // Procesar métricas/contador, notificaciones, etc.
           this.handleNewMessage(msg)
 
@@ -717,35 +714,6 @@ export default {
         const res = await fetchGroups(me)
         this.groups = Array.isArray(res.data) ? res.data : []
       } finally { this.loadingGroups = false }
-    },
-    findUserById(id) {
-      return (this.users || []).find(u => String(u.id) === String(id)) || null
-    },
-    enrichMessageWithUserData(msg) {
-      try {
-        const clone = { ...msg }
-        const resolveUser = (obj, idField, nameField) => {
-          const id = (obj && (obj.id ?? obj.userId)) ?? clone[idField]
-          const name = (obj && (obj.username ?? obj.name)) ?? clone[nameField]
-          if (id === undefined) return obj
-          const user = this.findUserById(id)
-          if (user) {
-            return { id: user.id, username: user.username || name, avatarUrl: user.avatarUrl }
-          }
-          if (obj) return { ...obj }
-          if (id !== undefined || name) return { id, username: name }
-          return obj
-        }
-        if (clone.sender || clone.senderId !== undefined) {
-          clone.sender = resolveUser(clone.sender, 'senderId', 'senderName')
-        }
-        if (clone.receiver || clone.receiverId !== undefined) {
-          clone.receiver = resolveUser(clone.receiver, 'receiverId', 'receiverName')
-        }
-        return clone
-      } catch (e) {
-        return msg
-      }
     },
   },
   async mounted() {
