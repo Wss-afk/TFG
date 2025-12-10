@@ -39,7 +39,7 @@
             <div class="time">{{ formattedTime(lastMessageMap[user.id]?.timestamp) }}</div>
           </div>
           <div class="bottom">
-            <div class="sub">{{ lastMessageMap[user.id]?.content || '\u00A0' }}</div>
+            <div class="sub">{{ formatPreview(user.id) }}</div>
             <span v-if="unreadCounts[user.id] > 0" class="unread">{{ unreadCounts[user.id] }}</span>
           </div>
         </div>
@@ -100,12 +100,24 @@ export default {
       return d.toLocaleDateString()
     },
     isUserOnline(user) {
-      // 基于真实的在线用户列表判断用户是否在线（兼容不同字段）
+      // Based on real online users list
       if (!Array.isArray(this.onlineUsers) || this.onlineUsers.length === 0) return false
       return this.onlineUsers.some(ou => {
         const ouId = ou.id ?? ou.userId
         return (ouId !== undefined && ouId === user.id) || (ou.username && ou.username === user.username)
       })
+    },
+    formatPreview(userId) {
+      const msg = this.lastMessageMap[userId]
+      if (!msg) return '\u00A0'
+      const content = msg.content || ''
+      if (msg.isMine) {
+        return 'Yo: ' + content
+      }
+      if (msg.senderName) {
+        return msg.senderName + ': ' + content
+      }
+      return content
     }
   }
 }

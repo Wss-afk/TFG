@@ -202,7 +202,9 @@ export default {
         this.messages = sorted
         const last = sorted[sorted.length - 1]
         if (last) {
-          this.lastMessageMap[user.id] = { content: last.content, timestamp: last.timestamp }
+          const isMine = last.sender && last.sender.id === this.currentUser.id
+          const senderName = last.sender ? (last.sender.username || last.sender.name) : ''
+          this.lastMessageMap[user.id] = { content: last.content, timestamp: last.timestamp, isMine, senderName }
         }
         
         // 标记消息为已读
@@ -248,7 +250,12 @@ export default {
              console.log(`Usuario ${senderId} mensajes no leídos actualizados a:`, newCount)
            }
           // Actualizar último mensaje del remitente
-          this.lastMessageMap[senderId] = { content: message.content, timestamp: message.timestamp }
+          this.lastMessageMap[senderId] = { 
+            content: message.content, 
+            timestamp: message.timestamp, 
+            isMine: isFromSelf,
+            senderName: message.sender ? (message.sender.username || message.sender.name) : ''
+          }
         }
         
         // Mostrar notificación de escritorio solo para mensajes individuales
@@ -388,7 +395,12 @@ export default {
           sendMessage('/app/chat/single', message)
           this.showToast('Mensaje enviado', 'success')
           // Actualizar hint de último mensaje en la lista
-          this.lastMessageMap[this.selectedUser.id] = { content, timestamp: message.timestamp }
+          this.lastMessageMap[this.selectedUser.id] = { 
+            content, 
+            timestamp: message.timestamp,
+            isMine: true,
+            senderName: this.currentUser.username
+          }
         } else if (this.chatType === 'group' && this.selectedGroup) {
           const message = {
             sender: { id: this.currentUser.id, username: this.currentUser.username, avatarUrl: this.currentUser.avatarUrl },
@@ -680,8 +692,12 @@ export default {
             const res = await fetchMessages({ receiverId: u.id, userId: meId })
             const arr = Array.isArray(res.data) ? res.data : []
             if (arr.length) {
+              // Ordenar por fecha para asegurar que tomamos el último
+              arr.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
               const last = arr[arr.length - 1]
-              this.lastMessageMap[u.id] = { content: last.content, timestamp: last.timestamp }
+              const isMine = last.sender && last.sender.id === meId
+              const senderName = last.sender ? (last.sender.username || last.sender.name) : ''
+              this.lastMessageMap[u.id] = { content: last.content, timestamp: last.timestamp, isMine, senderName }
             }
           } catch (e) {
             console.warn('No se pudo cargar último mensaje de usuario', u.id, e)
