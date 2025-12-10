@@ -15,10 +15,7 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
         
         // 允许的源
-        config.addAllowedOrigin("http://localhost:8081");
-        config.addAllowedOrigin("http://localhost:8082");
-        config.addAllowedOrigin("http://127.0.0.1:8081");
-        config.addAllowedOrigin("http://127.0.0.1:8082");
+        config.addAllowedOriginPattern("*");
         
         // 允许的HTTP方法
         config.addAllowedMethod("GET");
