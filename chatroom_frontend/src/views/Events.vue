@@ -448,11 +448,10 @@ export default {
     async loadUsers() {
       try {
         const res = await fetchUsers()
-        const arr = Array.isArray(res?.data) ? res.data : []
-        this.users = arr
+        // Filtrar para que no salga el SUPER_ADMIN en la lista de asignables
+        this.users = (Array.isArray(res.data) ? res.data : []).filter(u => u.role !== 'SUPER_ADMIN')
       } catch (e) {
-        console.warn('No se pudieron cargar usuarios para asignación')
-        this.users = []
+        console.error(e)
       }
     },
     usernameById(id) {

@@ -114,7 +114,8 @@ export default {
     },
     sortedUsers() {
       if (!this.currentUser) return this.users;
-      const others = this.users.filter(u => u.id !== this.currentUser.id);
+      // Filtrar superadmins de la lista
+      const others = this.users.filter(u => u.id !== this.currentUser.id && u.role !== 'SUPER_ADMIN');
       return [this.currentUser, ...others];
     },
     activeTabLabel() {
