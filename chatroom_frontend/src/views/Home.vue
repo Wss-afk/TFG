@@ -56,20 +56,20 @@
             <div class="card-title">Tareas de hoy <span class="muted">({{ todayEvents.length }})</span></div>
             <button class="add-btn" aria-label="Agregar" @click="openCreateForm"><Icon name="plus" :size="18" /></button>
           </header>
-          <ul class="tasks-list gap8-1">
+          <div v-if="todayEvents.length === 0" class="empty-state">
+            <div class="empty-icon"><Icon name="calendar" :size="24" /></div>
+            <div class="empty-text">
+              <span class="strong">¡Día libre!</span>
+              <span class="sub">No tienes tareas para hoy</span>
+            </div>
+          </div>
+          <ul v-else class="tasks-list gap8-1">
             <li v-for="ev in todayEvents" :key="ev.id || ev.title" class="task-item clickable" @click="openTaskDetails(ev)">
               <div class="task-info">
                 <span class="task-marker" :style="{ backgroundColor: ev.color || '#6366f1' }"></span>
                 <span class="task-title">{{ ev.title }}</span>
               </div>
               <span class="time">{{ ev.time || 'Todo el día' }}</span>
-            </li>
-            <li v-if="todayEvents.length === 0" class="task-item empty-state">
-              <div class="empty-icon"><Icon name="calendar" :size="24" /></div>
-              <div class="empty-text">
-                <span class="strong">¡Día libre!</span>
-                <span class="sub">No tienes tareas para hoy</span>
-              </div>
             </li>
           </ul>
         </section>
@@ -710,10 +710,13 @@ export default {
 .current-date { text-transform: capitalize; }
 
 .empty-state {
+  flex: 1; height: 100%;
+  display: flex; /* Asegurar display flex para align-items */
   justify-content: center; flex-direction: column; gap: 12px;
   padding: 40px 20px; color: #94a3b8; background: #f8fafc;
   border-radius: 16px; border: 2px dashed #e2e8f0;
   transition: all 0.2s;
+  align-items: center; /* Centrado horizontal del contenido flex */
 }
 .empty-state:hover { border-color: #cbd5e1; background: #f1f5f9; }
 .empty-icon { color: #cbd5e1; margin-bottom: 4px; }
@@ -722,6 +725,7 @@ export default {
 .empty-text .sub { font-size: 0.85rem; }
 
 .notice.empty-notice {
+  flex: 1; height: 100%;
   background: #f8fafc; border: 2px dashed #e2e8f0;
   display: flex; align-items: center; justify-content: center;
   border-radius: 16px; padding: 40px 20px;
@@ -815,7 +819,12 @@ export default {
 .more { font-size: 9px; color: #94a3b8; font-weight: 700; }
 .day.today .more { color: rgba(255,255,255,0.8); }
 
-.tasks-list { list-style: none; margin: 0; padding: 16px 20px 20px; display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; gap: 10px; }
+.tasks-card {
+  display: flex; flex-direction: column;
+  min-height: 320px;
+  height: 100%;
+}
+.tasks-list { list-style: none; margin: 0; padding: 16px 20px 20px; display: flex; flex-direction: column; flex: 1; overflow-y: auto; gap: 10px; }
 .task-item {
   display: flex; justify-content: space-between; align-items: center;
   background: #fff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 12px 16px;
@@ -839,7 +848,12 @@ export default {
 }
 .assign-btn:hover { background: #eff6ff; border-color: #dbeafe; }
 
-.notifications-list { list-style: none; margin: 0; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; max-height: 320px; overflow-y: auto; }
+.notification-card {
+  display: flex; flex-direction: column;
+  min-height: 320px;
+  height: 100%;
+}
+.notifications-list { list-style: none; margin: 0; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
 .notification-item {
   display: flex; justify-content: space-between; align-items: flex-start;
   background: #fff; border: 1px solid #f1f5f9; border-radius: 16px; padding: 16px;
