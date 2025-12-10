@@ -32,4 +32,18 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT COUNT(m) FROM Message m WHERE m.receiver.id = :userId AND m.sender.id = :senderId AND m.isRead = false")
     int countUnreadMessages(@Param("userId") Long userId, @Param("senderId") Long senderId);
+
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.group.id = :groupId AND m.id > :lastReadMessageId AND m.sender.id <> :userId")
+    int countGroupUnreadMessages(@Param("groupId") Long groupId, @Param("lastReadMessageId") Long lastReadMessageId, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(m) FROM Message m WHERE m.group.id = :groupId")
+    int countGroupMessages(@Param("groupId") Long groupId);
+    
+    @Query("SELECT MAX(m.id) FROM Message m WHERE m.group.id = :groupId")
+    Long findLastMessageIdInGroup(@Param("groupId") Long groupId);
+
+    List<Message> findByReceiverIdAndIsReadFalse(Long receiverId);
+
+    @Query("SELECT m FROM Message m WHERE m.group.id = :groupId AND m.id > :lastReadMessageId AND m.sender.id <> :userId")
+    List<Message> findGroupUnreadMessages(@Param("groupId") Long groupId, @Param("lastReadMessageId") Long lastReadMessageId, @Param("userId") Long userId);
 }

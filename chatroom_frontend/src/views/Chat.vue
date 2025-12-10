@@ -33,14 +33,14 @@
           </div>
         </div>
         <div class="main-chat">
-          <template v-if="selectedUser || selectedGroup">
+          <template v-if="currentUser && (selectedUser || selectedGroup)">
             <ChatWindow 
               ref="chatWindow"
               :messages="filteredMessages" 
               :chatUser="selectedUser" 
               :chatGroup="selectedGroup"
               :chatType="chatType"
-              :currentUserId="currentUser && currentUser.id"
+              :currentUserId="currentUser.id"
               :searchQuery="searchQuery"
               :loading="loadingMessages"
               @update:searchQuery="searchQuery = $event"
@@ -263,7 +263,11 @@ export default {
     
     showNotification(message) {
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`Nuevo mensaje de ${message.sender.username}`, {
+        let title = `Nuevo mensaje de ${message.sender.username}`
+        if (message.group) {
+          title = `${message.sender.username} en ${message.group.name}`
+        }
+        new Notification(title, {
           body: message.content,
           icon: '/favicon.ico',
           tag: 'chat-message'
@@ -333,7 +337,7 @@ export default {
         this.chatType = 'group'
         this.loadingMessages = true
         
-        const { fetchMessages } = await import('../services/chat.service.js')
+        const { fetchMessages, markGroupMessagesAsRead } = await import('../services/chat.service.js')
         const meId = this.currentUser && this.currentUser.id
         const res = await fetchMessages({ groupId: group.id, userId: meId })
         this.messages = res.data.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
@@ -341,9 +345,14 @@ export default {
         // Suscribirse a mensajes del grupo
         this.subscribeToGroupChannel(group.id)
         
-        // 清除该群组的未读消息计数
-        if (group && group.id) {
-          this.groupUnreadCounts[group.id] = 0
+        // Marcar como leído y limpiar contador
+        if (group && group.id && meId) {
+          try {
+            await markGroupMessagesAsRead(meId, group.id)
+            this.groupUnreadCounts[group.id] = 0
+          } catch (e) {
+            console.error('Error al marcar grupo como leído:', e)
+          }
         }
       } catch (e) {
         console.error('Error en selectGroup:', e)
@@ -456,13 +465,21 @@ export default {
             this.scrollToBottom()
           })
         } else {
-          // Incrementar contador de no leídos para el grupo
-          const newCount = (this.groupUnreadCounts[msgGroupId] || 0) + 1
-          this.groupUnreadCounts[msgGroupId] = newCount
-          console.log(`Grupo ${msgGroupId} mensajes no leídos:`, newCount)
-          
-          // Reproducir sonido de notificación para mensajes de grupo no visibles
-          this.playNotificationSound()
+          // Verificar si el mensaje es propio para no notificar
+          const senderId = (msg && msg.sender && (msg.sender.id ?? msg.sender.userId)) || msg.senderId
+          const isFromSelf = senderId && this.currentUser && senderId === this.currentUser.id
+
+          if (!isFromSelf) {
+            // Incrementar contador de no leídos para el grupo
+            const newCount = (this.groupUnreadCounts[msgGroupId] || 0) + 1
+            this.groupUnreadCounts[msgGroupId] = newCount
+            console.log(`Grupo ${msgGroupId} mensajes no leídos:`, newCount)
+            
+            // Reproducir sonido de notificación para mensajes de grupo no visibles
+            this.playNotificationSound()
+            // Mostrar notificación de escritorio
+            this.showNotification(msg)
+          }
         }
       })
     },
@@ -593,7 +610,7 @@ export default {
       if (!this.currentUser) return
       
       try {
-        const { getUnreadCount } = await import('../services/chat.service.js')
+        const { getUnreadCount, getGroupUnreadCounts } = await import('../services/chat.service.js')
         const unreadCounts = {}
         
         for (const user of this.users) {
@@ -609,7 +626,19 @@ export default {
         }
         
         this.unreadCounts = unreadCounts
-        console.log('Cantidad de mensajes no leídos:', this.unreadCounts)
+        
+        // Obtener contadores de grupos
+        try {
+          const groupRes = await getGroupUnreadCounts(this.currentUser.id)
+          if (groupRes.data) {
+            // Asegurarse de que groupUnreadCounts es reactivo
+            this.groupUnreadCounts = { ...groupRes.data }
+          }
+        } catch (e) {
+          console.error('Error fetching group unread counts', e)
+        }
+
+        console.log('Cantidad de mensajes no leídos:', this.unreadCounts, this.groupUnreadCounts)
       } catch (error) {
         console.error('Error al obtener cantidad de no leídos:', error)
       }

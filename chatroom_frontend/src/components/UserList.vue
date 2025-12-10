@@ -38,10 +38,10 @@
             <div class="name">{{ user.username }}</div>
             <div class="time">{{ formattedTime(lastMessageMap[user.id]?.timestamp) }}</div>
           </div>
-          <div class="sub">{{ lastMessageMap[user.id]?.content || '\u00A0' }}</div>
-        </div>
-        <div class="meta">
-          <span v-if="unreadCounts[user.id] > 0" class="unread">{{ unreadCounts[user.id] }}</span>
+          <div class="bottom">
+            <div class="sub">{{ lastMessageMap[user.id]?.content || '\u00A0' }}</div>
+            <span v-if="unreadCounts[user.id] > 0" class="unread">{{ unreadCounts[user.id] }}</span>
+          </div>
         </div>
       </li>
     </transition-group>
@@ -118,7 +118,6 @@ export default {
 
 .row {
   padding: 12px 16px;
-  padding-right: 36px; /* espacio para el contador a la derecha */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -150,24 +149,24 @@ export default {
 .status-dot.online { background: #10b981; animation: breathe 2s ease-in-out infinite; }
 .status-dot.offline { background: #9ca3af; }
 
-.info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .name { font-weight: 700; color: #111827; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease; }
-.time { color: #64748b; font-size: 12px; white-space: nowrap; transition: color .15s ease; }
-.sub { color: #64748b; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease; }
+.time { color: #64748b; font-size: 11px; white-space: nowrap; transition: color .15s ease; }
+.sub { color: #64748b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s ease; flex: 1; }
 
 .row:hover .name { color: var(--brand-gradient-start); }
 .row:hover .time, .row:hover .sub { color: #4b5563; }
 
-.meta { position: absolute; right: 12px; top: 12px; transform: none; display: flex; align-items: center; gap: 8px; z-index: 1; }
-.unread { background: #10b981; color: #fff; border-radius: 9999px; min-width: 18px; height: 18px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; animation: badgePulse 1.4s ease-in-out infinite; }
+.unread { background: #ef4444; color: #fff; border-radius: 9999px; min-width: 20px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; animation: badgePulse 1.4s ease-in-out infinite; box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4); }
 
 @media (max-width: 768px) {
   .user-list { padding: 0; }
-  .row { padding: 10px 14px; padding-right: 34px; }
+  .row { padding: 10px 14px; }
   .avatar-wrap, .avatar { width: 30px; height: 30px; }
   .name { font-size: 13px; }
-  .unread { min-width: 16px; height: 16px; font-size: 10px; }
+  .unread { min-width: 18px; height: 18px; font-size: 10px; }
 }
 
 @media (max-width: 480px) {

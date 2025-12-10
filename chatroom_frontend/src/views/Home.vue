@@ -435,6 +435,42 @@ export default {
       const data = await fetchMonthEvents(this.year, this.month + 1)
       this.events = Array.isArray(data) ? data : []
     },
+    async loadNotifications() {
+      if (!this.currentUser) return
+      try {
+        const { fetchNotifications } = await import('../services/chat.service.js')
+        const res = await fetchNotifications(this.currentUser.id)
+        if (Array.isArray(res.data)) {
+          this.notifications = res.data.map(msg => {
+            const isGroup = !!msg.group
+            const senderId = (msg.sender && (msg.sender.id ?? msg.sender.userId)) || msg.senderId
+            const senderName = (msg.sender && msg.sender.username) || 'Usuario'
+            const title = isGroup 
+              ? (msg.group.name || `Grupo ${msg.group.id}`) 
+              : senderName
+            
+            let text = msg.content || ''
+            if (!text) {
+              if (msg.type === 'image') text = '📷 Foto'
+              else if (msg.type === 'file') text = '📎 Archivo'
+              else text = '[Mensaje]'
+            }
+
+            return {
+              key: `${isGroup ? 'group' : 'user'}-${isGroup ? msg.group.id : senderId}-${msg.id}`,
+              type: isGroup ? 'group' : 'user',
+              title,
+              text,
+              when: this.formatTime(msg.timestamp),
+              senderId: !isGroup ? senderId : null,
+              groupId: isGroup ? msg.group.id : null
+            }
+          })
+        }
+      } catch (e) {
+        console.warn('Error loading notifications:', e)
+      }
+    },
     saveNote() {
       if (this.currentUser && this.currentUser.id) {
         localStorage.setItem(`user_quick_note_${this.currentUser.id}`, this.quickNote)
@@ -605,6 +641,7 @@ export default {
       this.quickNote = localStorage.getItem(`user_quick_note_${this.currentUser.id}`) || ''
     }
     await this.loadMonth()
+    await this.loadNotifications()
     await this.loadGroups()
     this.initWebSocketConnection()
   },
