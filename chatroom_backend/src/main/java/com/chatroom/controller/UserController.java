@@ -95,4 +95,17 @@ public class UserController {
         User saved = userService.save(u);
         return ResponseEntity.ok(saved);
     }
+
+    @GetMapping("/status")
+    public ResponseEntity<?> checkStatus(@RequestParam String username) {
+        Optional<User> userOpt = userService.findByUsername(username);
+        if (userOpt.isPresent()) {
+            User u = userOpt.get();
+            if (!Boolean.TRUE.equals(u.isEnabled())) {
+                return ResponseEntity.status(403).body(Map.of("enabled", false, "message", "Cuenta deshabilitada"));
+            }
+            return ResponseEntity.ok(Map.of("enabled", true, "username", u.getUsername()));
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

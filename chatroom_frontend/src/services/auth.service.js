@@ -14,3 +14,7 @@ export function logout() {
   // No logout endpoint in backend; implement client-side logout if needed
   return Promise.resolve()
 }
+
+export function checkStatus(username) {
+  return axios.get(API_URL + 'status', { params: { username } })
+}

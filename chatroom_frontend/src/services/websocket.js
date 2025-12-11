@@ -3,6 +3,7 @@ import Stomp from 'webstomp-client'
 
 let stompClient = null
 let onlineUsersCallback = null
+let controlCallback = null
 
 export function connectWebSocket(url, username, onMessage, onConnect, onError) {
   const socket = new SockJS(url)
@@ -19,6 +20,9 @@ export function connectWebSocket(url, username, onMessage, onConnect, onError) {
     // Suscribirse a actualizaciones de usuarios en línea
     subscribeToOnlineUsers()
     
+    // Suscribirse a cola de control personal (para logout forzado, etc.)
+    subscribeToControlQueue()
+
     if (onConnect) onConnect(frame)
   }, error => {
     console.error('Error de conexión WebSocket:', error)
@@ -52,6 +56,8 @@ export function disconnectWebSocket() {
     }
     stompClient = null
     onlineUsersCallback = null
+    // NO limpiar controlCallback para que persista durante reconexiones
+    // controlCallback = null 
   }
 }
 
@@ -68,9 +74,27 @@ function subscribeToOnlineUsers() {
   }
 }
 
+// Suscribirse a cola de control personal
+function subscribeToControlQueue() {
+  if (stompClient && stompClient.connected) {
+    stompClient.subscribe('/user/queue/control', message => {
+      const payload = JSON.parse(message.body)
+      console.warn('Mensaje de control recibido:', payload)
+      if (controlCallback) {
+        controlCallback(payload)
+      }
+    })
+  }
+}
+
 // Configurar callback de actualización de usuarios en línea
 export function setOnlineUsersCallback(callback) {
   onlineUsersCallback = callback
+}
+
+// Configurar callback de mensajes de control
+export function setControlCallback(callback) {
+  controlCallback = callback
 }
 
 // Obtener estado de conexión actual

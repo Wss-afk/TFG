@@ -83,8 +83,11 @@
 
         <aside class="sidebar">
           <div class="panel">
-            <div class="panel-header-row">
+            <div class="panel-header-row" style="display: flex; justify-content: space-between; align-items: center;">
               <h2 class="panel-title">{{ selectedDay ? `Eventos: ${selectedDayLabel}` : 'Selecciona un día' }}</h2>
+              <button class="primary-sm icon-only" @click="openCreateForm" title="Nuevo evento" v-if="selectedDay">
+                <Icon name="plus" :size="16" />
+              </button>
             </div>
             
             <ul class="event-list gap8-2">
@@ -126,9 +129,6 @@
                   <p class="empty-desc" v-if="selectedDay">Parece un día tranquilo. ¿Por qué no añades un nuevo evento?</p>
                   <p class="empty-desc" v-else>No hay eventos programados para este mes.</p>
                   <div v-if="selectedDay" style="margin-top: 20px">
-                    <button class="primary-sm" @click="openCreateForm">
-                      <Icon name="plus" :size="16" /> Crear Evento
-                    </button>
                   </div>
                 </li>
               </template>
@@ -250,12 +250,6 @@
               </div>
             </div>
             </transition>
-
-            <div class="panel-actions">
-              <button class="primary full-width" @click="openCreateForm">
-                <Icon name="plus" :size="18" style="margin-right: 6px"/> Nuevo evento
-              </button>
-            </div>
           </div>
         </aside>
       </section>

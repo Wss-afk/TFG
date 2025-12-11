@@ -34,7 +34,17 @@ export default {
   data() {
     return {
       username: '',
-      password: ''
+      password: '',
+      alertMessage: ''
+    }
+  },
+  mounted() {
+    // Comprobar si hay mensaje de logout forzado
+    const msg = sessionStorage.getItem('logout_message')
+    if (msg) {
+      this.alertMessage = msg
+      sessionStorage.removeItem('logout_message')
+      setTimeout(() => { alert(msg) }, 200) // Pequeño delay para asegurar que la vista cargó
     }
   },
   methods: {
