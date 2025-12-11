@@ -28,7 +28,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
     private Path resolveUploadBase() {
         try {
             if (uploadDirProp != null && !uploadDirProp.isBlank()) {
+                // Resolver ruta relativa al directorio de trabajo actual si empieza con ./
                 Path p = Paths.get(uploadDirProp);
+                if (!p.isAbsolute()) {
+                    p = Paths.get("").resolve(uploadDirProp).toAbsolutePath().normalize();
+                }
                 Files.createDirectories(p);
                 return p;
             }

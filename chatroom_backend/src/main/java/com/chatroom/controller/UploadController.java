@@ -26,6 +26,9 @@ public class UploadController {
         try {
             if (uploadDirProp != null && !uploadDirProp.isBlank()) {
                 Path p = Paths.get(uploadDirProp);
+                if (!p.isAbsolute()) {
+                    p = Paths.get("").resolve(uploadDirProp).toAbsolutePath().normalize();
+                }
                 Files.createDirectories(p);
                 return p;
             }
