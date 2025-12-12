@@ -91,3 +91,12 @@ The application uses a specific entity `GroupReadStatus` to efficiently track un
 - **Frontend**: Subscribes to topics like `/topic/public` (global events) and `/user/queue/messages` (private updates).
 
 ## 📂 Project Structure
+TFG21/
+├── chatroom_backend/     # Spring Boot Server
+│   ├── src/main/java/    # Controllers, Services, Entities
+│   └── src/main/resources/ # Config (application.yml)
+├── chatroom_frontend/    # Vue.js Client
+│   ├── src/views/        # UI Pages (Chat, Admin, Login)
+│   ├── src/store/        # Vuex State Management
+│   └── src/services/     # API & WebSocket Services
+└── README.md             # This file
