@@ -263,6 +263,7 @@ import AppDock from '../components/AppDock.vue'
 import Icon from '../components/Icon.vue'
 import { fetchMonthEvents, createEvent, deleteEvent } from '../services/events.service.js'
 import { fetchUsers } from '../services/user.service.js'
+import { connectWebSocket, disconnectWebSocket } from '../services/websocket.js'
 import { mapGetters } from 'vuex'
 
 export default {
@@ -477,6 +478,14 @@ export default {
         this.deleting = false
       }
     },
+    initWebSocketConnection() {
+      if (!this.currentUser) return
+      connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
+        console.log('WebSocket conectado en Events')
+      }, (err) => {
+        console.error('Error de WebSocket en Events:', err)
+      })
+    },
     handleKeydown(e) {
       if (e.key === 'Escape') {
         if (this.detailOpen) this.closeEventDetails()
@@ -488,9 +497,11 @@ export default {
     window.addEventListener('keydown', this.handleKeydown)
     await this.loadMonth()
     await this.loadUsers()
+    this.initWebSocketConnection()
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleKeydown)
+    disconnectWebSocket()
   },
   watch: {
     month() { this.loadMonth() },

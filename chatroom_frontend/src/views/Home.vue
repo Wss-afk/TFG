@@ -365,7 +365,8 @@ export default {
     async loadUsers() {
       try {
         const res = await fetchUsers()
-        this.users = Array.isArray(res?.data) ? res.data : []
+        // Filtrar SUPER_ADMIN para que no aparezca como opción de responsable
+        this.users = (Array.isArray(res?.data) ? res.data : []).filter(u => u.role !== 'SUPER_ADMIN')
       } catch (e) {
         console.warn('No se pudieron cargar usuarios', e)
       }
@@ -626,7 +627,10 @@ export default {
         console.warn('No se pudo marcar como leído:', e)
       }
       // Navegar a chat para ver el mensaje
-      this.$router.push('/chat')
+      const query = {}
+      if (n.type === 'user' && n.senderId) query.userId = n.senderId
+      if (n.type === 'group' && n.groupId) query.groupId = n.groupId
+      this.$router.push({ path: '/chat', query })
     },
     handleKeydown(e) {
       if (e.key === 'Escape') {

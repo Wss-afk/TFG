@@ -732,6 +732,24 @@ export default {
         this.groups = Array.isArray(res.data) ? res.data : []
       } finally { this.loadingGroups = false }
     },
+    checkRouteParams() {
+      const { userId, groupId } = this.$route.query
+      if (userId) {
+        // Esperar a que users esté cargado si es necesario, pero aquí ya debería estarlo
+        // porque llamamos a checkRouteParams al final de mounted o en watch
+        const u = this.users.find(x => String(x.id) === String(userId))
+        if (u) {
+          this.activeTab = 'contacts'
+          this.selectUser(u)
+        }
+      } else if (groupId) {
+        const g = this.groups.find(x => String(x.id) === String(groupId))
+        if (g) {
+          this.activeTab = 'groups'
+          this.selectGroup(g)
+        }
+      }
+    }
   },
   async mounted() {
     const { fetchUsers, fetchGroups } = await import('../services/user.service.js')
@@ -765,6 +783,17 @@ export default {
     
     // Detectar interacción del usuario para habilitar AudioContext
     this.setupUserInteractionDetection()
+
+    // Verificar parámetros de ruta al iniciar
+    this.checkRouteParams()
+  },
+  watch: {
+    '$route.query': {
+      handler() {
+        this.checkRouteParams()
+      },
+      immediate: false
+    }
   },
   beforeUnmount() {
     if (this.globalSubscription) {
