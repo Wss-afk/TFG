@@ -47,7 +47,8 @@ public class AdminController {
     // Simple guard: check header X-Admin-UserId belongs to SUPER_ADMIN
     private boolean isSuperAdmin(String adminUserIdHeader) {
         try {
-            if (adminUserIdHeader == null) return false;
+            if (adminUserIdHeader == null)
+                return false;
             Long adminId = Long.parseLong(adminUserIdHeader);
             Optional<User> adminOpt = userRepository.findById(adminId);
             return adminOpt.isPresent() && adminOpt.get().getRole() == Role.SUPER_ADMIN;
@@ -67,7 +68,8 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<?> listUsers(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         List<User> nonSuperAdmins = userRepository.findAll().stream()
                 .filter(u -> u.getRole() != Role.SUPER_ADMIN)
                 .collect(Collectors.toList());
@@ -76,9 +78,10 @@ public class AdminController {
 
     @PostMapping("/users")
     public ResponseEntity<?> createUser(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                        @RequestBody User user) {
+            @RequestBody User user) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         // Validación básica: username y password no vacíos (tras trim)
         String username = user.getUsername() == null ? null : user.getUsername().trim();
         String password = user.getPassword() == null ? null : user.getPassword().trim();
@@ -111,12 +114,14 @@ public class AdminController {
 
     @PutMapping("/users/{id}")
     public ResponseEntity<?> updateUser(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                        @PathVariable Long id,
-                                        @RequestBody User update) {
+            @PathVariable Long id,
+            @RequestBody User update) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         Optional<User> opt = userRepository.findById(id);
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        if (opt.isEmpty())
+            return ResponseEntity.notFound().build();
         User u = opt.get();
         String previousUsername = u.getUsername();
         // No permitir modificar el SUPER_ADMIN
@@ -131,7 +136,8 @@ public class AdminController {
                 return ResponseEntity.badRequest().body("username required");
             }
             if (userRepository.findByUsername(newUsernameTrimmed).isPresent()) {
-                auditService.logAdminAction(adminUserId, "USER_UPDATE", "USER", u.getId(), newUsernameTrimmed, false, 400,
+                auditService.logAdminAction(adminUserId, "USER_UPDATE", "USER", u.getId(), newUsernameTrimmed, false,
+                        400,
                         Map.of("error", "Username already exists"), null, null);
                 return ResponseEntity.badRequest().body("Username already exists");
             }
@@ -141,13 +147,15 @@ public class AdminController {
             // Empty string indicates removal of avatar
             u.setAvatarUrl(update.getAvatarUrl().isEmpty() ? null : update.getAvatarUrl());
         }
-        if (update.getRole() != null) u.setRole(update.getRole());
+        if (update.getRole() != null)
+            u.setRole(update.getRole());
         // Permitir cambiar habilitación para usuarios no SUPER_ADMIN
         boolean wasEnabled = Boolean.TRUE.equals(u.isEnabled());
         u.setEnabled(update.isEnabled());
         User saved = userRepository.save(u);
 
-        // Notificar actualización de perfil a todos los clientes para refrescar avatares
+        // Notificar actualización de perfil a todos los clientes para refrescar
+        // avatares
         try {
             Map<String, Object> updateMsg = new HashMap<>();
             updateMsg.put("action", "user_updated");
@@ -159,11 +167,12 @@ public class AdminController {
             // best-effort
         }
 
-        // Si se deshabilita un usuario que estaba habilitado, avisar al cliente para que desconecte
+        // Si se deshabilita un usuario que estaba habilitado, avisar al cliente para
+        // que desconecte
         if (wasEnabled && !Boolean.TRUE.equals(saved.isEnabled())) {
             try {
                 // Enviar al username actual asociado al usuario
-                messagingTemplate.convertAndSendToUser(saved.getUsername(), 
+                messagingTemplate.convertAndSendToUser(saved.getUsername(),
                         "/queue/control", Map.of("action", "force_logout", "reason", "account_disabled"));
                 // También enviar al username previo por si se cambió durante la actualización
                 if (previousUsername != null && !previousUsername.equals(saved.getUsername())) {
@@ -173,24 +182,27 @@ public class AdminController {
             } catch (Exception e) {
                 // best-effort; no bloquear la operación
             }
-            auditService.logAdminAction(adminUserId, "ACCOUNT_DISABLE", "USER", saved.getId(), saved.getUsername(), true, 200,
+            auditService.logAdminAction(adminUserId, "ACCOUNT_DISABLE", "USER", saved.getId(), saved.getUsername(),
+                    true, 200,
                     Map.of("enabled", false), null, null);
         }
         auditService.logAdminAction(adminUserId, "USER_UPDATE", "USER", saved.getId(), saved.getUsername(), true, 200,
                 Map.of(
                         "usernameChanged", !saved.getUsername().equals(previousUsername),
                         "role", saved.getRole().name(),
-                        "enabled", saved.isEnabled()
-                ), null, null);
+                        "enabled", saved.isEnabled()),
+                null, null);
         return ResponseEntity.ok(saved);
     }
 
     @PatchMapping("/users/{id}/password")
-    public ResponseEntity<?> changePassword(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                            @PathVariable Long id,
-                                            @RequestBody Map<String, String> body) {
+    public ResponseEntity<?> changePassword(
+            @RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         String newPassword = body.get("newPassword");
         if (newPassword == null || newPassword.trim().isEmpty()) {
             auditService.logAdminAction(adminUserId, "PASSWORD_CHANGE", "USER", id, null, false, 400,
@@ -198,27 +210,30 @@ public class AdminController {
             return ResponseEntity.badRequest().body("newPassword required");
         }
         Optional<User> opt = userRepository.findById(id);
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        if (opt.isEmpty())
+            return ResponseEntity.notFound().build();
         User u = opt.get();
         u.setPassword(newPassword.trim());
         User saved = userRepository.save(u);
         // Forzar logout del usuario si está conectado, ya que su credencial ha cambiado
         try {
-            messagingTemplate.convertAndSendToUser(saved.getUsername(), 
+            messagingTemplate.convertAndSendToUser(saved.getUsername(),
                     "/queue/control", Map.of("action", "force_logout", "reason", "password_changed"));
         } catch (Exception e) {
             // best-effort; si falla el envío, no bloquear la operación
         }
-        auditService.logAdminAction(adminUserId, "PASSWORD_CHANGE", "USER", saved.getId(), saved.getUsername(), true, 200,
+        auditService.logAdminAction(adminUserId, "PASSWORD_CHANGE", "USER", saved.getId(), saved.getUsername(), true,
+                200,
                 Map.of("changed", true), null, null);
         return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/users/{id}")
     public ResponseEntity<?> deleteUser(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                        @PathVariable Long id) {
+            @PathVariable Long id) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         if (!userRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
@@ -252,7 +267,8 @@ public class AdminController {
         // 4. Eliminar usuario
         userRepository.deleteById(id);
 
-        auditService.logAdminAction(adminUserId, "USER_DELETE", "USER", id, opt.map(User::getUsername).orElse(null), true, 200,
+        auditService.logAdminAction(adminUserId, "USER_DELETE", "USER", id, opt.map(User::getUsername).orElse(null),
+                true, 200,
                 Map.of(), null, null);
         return ResponseEntity.ok().build();
     }
@@ -261,15 +277,17 @@ public class AdminController {
     @GetMapping("/groups")
     public ResponseEntity<?> listGroups(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         return ResponseEntity.ok(groupRepository.findAll());
     }
 
     @PostMapping("/groups")
     public ResponseEntity<?> createGroup(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                         @RequestBody CreateGroupRequest request) {
+            @RequestBody CreateGroupRequest request) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         if (request.getName() == null || request.getName().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("name required");
         }
@@ -290,45 +308,55 @@ public class AdminController {
 
     @PutMapping("/groups/{id}")
     public ResponseEntity<?> updateGroup(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                         @PathVariable Long id,
-                                         @RequestBody Group update) {
+            @PathVariable Long id,
+            @RequestBody Group update) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         Optional<Group> opt = groupRepository.findById(id);
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        if (opt.isEmpty())
+            return ResponseEntity.notFound().build();
         Group g = opt.get();
-        if (update.getName() != null) g.setName(update.getName());
+        if (update.getName() != null)
+            g.setName(update.getName());
         return ResponseEntity.ok(groupRepository.save(g));
     }
 
     @DeleteMapping("/groups/{id}")
     public ResponseEntity<?> deleteGroup(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                         @PathVariable Long id) {
+            @PathVariable Long id) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
-        if (!groupRepository.existsById(id)) return ResponseEntity.notFound().build();
+        if (forbidden != null)
+            return forbidden;
+        if (!groupRepository.existsById(id))
+            return ResponseEntity.notFound().build();
         groupRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/groups/{id}/members")
-    public ResponseEntity<?> updateGroupMembers(@RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
-                                                @PathVariable Long id,
-                                                @RequestBody GroupMembersUpdateRequest request) {
+    public ResponseEntity<?> updateGroupMembers(
+            @RequestHeader(value = "X-Admin-UserId", required = false) String adminUserId,
+            @PathVariable Long id,
+            @RequestBody GroupMembersUpdateRequest request) {
         ResponseEntity<?> forbidden = forbidIfNotSuperAdmin(adminUserId);
-        if (forbidden != null) return forbidden;
+        if (forbidden != null)
+            return forbidden;
         Optional<Group> opt = groupRepository.findById(id);
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        if (opt.isEmpty())
+            return ResponseEntity.notFound().build();
         Group g = opt.get();
         List<Long> userIds = request.getUserIds();
-        if (userIds == null) userIds = Collections.emptyList();
+        if (userIds == null)
+            userIds = Collections.emptyList();
         Set<User> members = new HashSet<>();
         for (Long uid : userIds) {
             userRepository.findById(uid).ifPresent(members::add);
         }
         g.setUsers(members);
         Group saved = groupRepository.save(g);
-        auditService.logAdminAction(adminUserId, "GROUP_MEMBER_UPDATE", "GROUP", saved.getId(), saved.getName(), true, 200,
+        auditService.logAdminAction(adminUserId, "GROUP_MEMBER_UPDATE", "GROUP", saved.getId(), saved.getName(), true,
+                200,
                 Map.of("memberCount", saved.getUsers() != null ? saved.getUsers().size() : 0), null, null);
         return ResponseEntity.ok(saved);
     }

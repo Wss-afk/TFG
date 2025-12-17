@@ -525,6 +525,7 @@ export default {
         
         // Tras conectar WebSocket, suscribirse al canal del usuario actual
         setTimeout(() => {
+          this.subscribeToPublicChannel()
           this.subscribeToGlobalUserChannel()
           this.subscribeToControlChannel()
           // Suscribirse a todos los canales de grupo para contar no leídos
@@ -536,6 +537,31 @@ export default {
       })
     },
     
+    subscribeToPublicChannel() {
+      // Canal público para eventos generales como actualizaciones de perfil
+      subscribe('/topic/public', (msg) => {
+        if (msg && msg.action === 'user_updated') {
+          // Si es el usuario actual, actualizar vuex
+          if (String(msg.userId) === String(this.currentUser.id)) {
+            this.$store.commit('auth/SET_USER', { ...this.currentUser, avatarUrl: msg.avatarUrl, username: msg.username })
+          }
+          
+          // Actualizar lista de usuarios local
+          this.users = this.users.map(u => {
+            if (String(u.id) === String(msg.userId)) {
+              return { ...u, avatarUrl: msg.avatarUrl, username: msg.username }
+            }
+            return u
+          })
+          
+          // Si el usuario actualizado es el seleccionado, actualizarlo también
+          if (this.selectedUser && String(this.selectedUser.id) === String(msg.userId)) {
+             this.selectedUser = { ...this.selectedUser, avatarUrl: msg.avatarUrl, username: msg.username }
+          }
+        }
+      })
+    },
+
     subscribeToGlobalUserChannel() {
       if (this.currentUser) {
         const topic = `/user/queue/messages`

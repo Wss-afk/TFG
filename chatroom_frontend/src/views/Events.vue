@@ -263,7 +263,7 @@ import AppDock from '../components/AppDock.vue'
 import Icon from '../components/Icon.vue'
 import { fetchMonthEvents, createEvent, deleteEvent } from '../services/events.service.js'
 import { fetchUsers } from '../services/user.service.js'
-import { connectWebSocket, disconnectWebSocket } from '../services/websocket.js'
+import { connectWebSocket, disconnectWebSocket, subscribe } from '../services/websocket.js'
 import { mapGetters } from 'vuex'
 
 export default {
@@ -482,8 +482,26 @@ export default {
       if (!this.currentUser) return
       connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
         console.log('WebSocket conectado en Events')
+        this.subscribeToPublicChannel()
       }, (err) => {
         console.error('Error de WebSocket en Events:', err)
+      })
+    },
+    subscribeToPublicChannel() {
+      subscribe('/topic/public', (msg) => {
+        if (msg && msg.action === 'user_updated') {
+          if (String(msg.userId) === String(this.currentUser.id)) {
+            this.$store.commit('auth/SET_USER', { ...this.currentUser, avatarUrl: msg.avatarUrl, username: msg.username })
+          }
+          if (this.users) {
+            this.users = this.users.map(u => {
+              if (String(u.id) === String(msg.userId)) {
+                return { ...u, avatarUrl: msg.avatarUrl, username: msg.username }
+              }
+              return u
+            })
+          }
+        }
       })
     },
     handleKeydown(e) {
