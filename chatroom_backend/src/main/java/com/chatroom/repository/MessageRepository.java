@@ -1,7 +1,6 @@
 package com.chatroom.repository;
 
 import com.chatroom.entity.Message;
-import com.chatroom.entity.User;
 import com.chatroom.entity.Group;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;

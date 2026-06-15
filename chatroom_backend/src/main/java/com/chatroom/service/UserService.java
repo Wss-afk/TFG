@@ -20,14 +20,6 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public Optional<User> login(String username, String password) {
-        Optional<User> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isPresent() && Boolean.TRUE.equals(userOpt.get().isEnabled()) && userOpt.get().getPassword().equals(password)) {
-            return userOpt;
-        }
-        return Optional.empty();
-    }
-
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
     }

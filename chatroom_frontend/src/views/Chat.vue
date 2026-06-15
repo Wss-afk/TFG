@@ -118,13 +118,6 @@ export default {
       const others = this.users.filter(u => u.id !== this.currentUser.id && u.role !== 'SUPER_ADMIN');
       return [this.currentUser, ...others];
     },
-    activeTabLabel() {
-      switch (this.activeTab) {
-        case 'contacts': return 'Contactos';
-        case 'groups': return 'Grupos';
-        default: return 'Todos';
-      }
-    },
     filteredMessages() {
       const list = Array.isArray(this.messages) ? this.messages : []
       const q = (this.searchQuery || '').trim().toLowerCase()
@@ -633,7 +626,7 @@ export default {
     
     async fetchOnlineUsers() {
       try {
-        const response = await fetch('http://localhost:8080/api/user/online')
+        const response = await fetch('/api/user/online')
         if (response.ok) {
           const data = await response.json()
           const normalized = this.normalizeOnlineUsers(data)

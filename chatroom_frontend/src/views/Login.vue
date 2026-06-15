@@ -149,16 +149,6 @@ export default {
   transform: translateY(1px);
 }
 
-.login-footer {
-  padding: 0 20px 20px;
-  text-align: center;
-  color: var(--color-text);
-}
-.login-footer a {
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
