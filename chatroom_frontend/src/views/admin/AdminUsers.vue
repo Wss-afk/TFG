@@ -5,7 +5,6 @@
       <select v-model="roleFilter" class="form-select" style="max-width:180px">
         <option value="">Todos los roles</option>
         <option value="USER">USER</option>
-        <option value="SUPER_ADMIN">SUPER_ADMIN</option>
       </select>
       <div class="ms-auto d-flex align-items-center gap-2">
         <label class="text-muted">Tamaño página</label>
@@ -36,7 +35,6 @@
         </div>
         <select v-model="newUser.role" class="form-select" style="max-width:180px">
           <option value="USER">USER</option>
-          <option value="SUPER_ADMIN">SUPER_ADMIN</option>
         </select>
         <button class="btn btn-success" @click="createUser">Crear</button>
       </div>
@@ -71,7 +69,6 @@
                 <span class="badge" :class="roleBadgeClass(u.role)">{{ formatRole(u.role) }}</span>
                 <select v-model="u.role" class="form-select">
                   <option value="USER">USER</option>
-                  <option value="SUPER_ADMIN">SUPER_ADMIN</option>
                 </select>
               </div>
             </td>

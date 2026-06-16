@@ -515,7 +515,7 @@ export default {
     },
     initWebSocketConnection() {
       if (!this.currentUser) return
-      connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
+      connectWebSocket(window.location.origin + '/ws', this.currentUser.username, null, () => {
         this.wsConnected = true
         // Suscripción a mensajes directos del usuario
         this.subscribeToGlobalUserChannel()

@@ -480,7 +480,7 @@ export default {
     },
     initWebSocketConnection() {
       if (!this.currentUser) return
-      connectWebSocket('http://localhost:8080/ws', this.currentUser.username, null, () => {
+      connectWebSocket(window.location.origin + '/ws', this.currentUser.username, null, () => {
         console.log('WebSocket conectado en Events')
         this.subscribeToPublicChannel()
       }, (err) => {

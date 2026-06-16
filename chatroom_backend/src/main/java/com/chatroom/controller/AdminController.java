@@ -147,7 +147,7 @@ public class AdminController {
             // Empty string indicates removal of avatar
             u.setAvatarUrl(update.getAvatarUrl().isEmpty() ? null : update.getAvatarUrl());
         }
-        if (update.getRole() != null)
+        if (update.getRole() != null && update.getRole() != Role.SUPER_ADMIN)
             u.setRole(update.getRole());
         // Permitir cambiar habilitación para usuarios no SUPER_ADMIN
         boolean wasEnabled = Boolean.TRUE.equals(u.isEnabled());

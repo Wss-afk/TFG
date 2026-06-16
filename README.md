@@ -100,3 +100,9 @@ TFG21/
 │   ├── src/store/        # Vuex State Management
 │   └── src/services/     # API & WebSocket Services
 └── README.md             # This file
+
+
+## Usuario de Administrador 
+superadmin
+admin123
+
