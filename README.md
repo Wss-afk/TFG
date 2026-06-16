@@ -102,6 +102,21 @@ TFG21/
 └── README.md             # This file
 
 
+Every time you update the project, run these 4 commands in order:
+# 1. Build frontend
+cd c:\Users\wang1\Desktop\TFG\TFG21\TFG\chatroom_frontend
+npm run build
+
+# 2. Copy dist to static
+xcopy /E /I chatroom_frontend\dist\* chatroom_backend\src\main\resources\static\
+
+# 3. Build JAR
+cd ..\chatroom_backend
+mvn clean package -DskipTests
+
+# 4. Run it
+java -jar target\chatroom-backend-1.0.0.jar
+
 ## Usuario de Administrador 
 superadmin
 admin123
